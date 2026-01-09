@@ -6,8 +6,8 @@
 const SubtitleParser = (function() {
     'use strict';
 
-    // 字幕行解析正則表達式
-    const SUBTITLE_LINE_REGEX = /Line (\d+) \| Word (\d+) \| (\d{2}):(\d{2}):(\d{2}) → (\d{2}):(\d{2}):(\d{2}) \| (.+)/;
+    // 字幕行解析正則表達式（支援拼音欄位）
+    const SUBTITLE_LINE_REGEX = /Line (\d+) \| Word (\d+) \| (\d{2}):(\d{2}):(\d{2}) → (\d{2}):(\d{2}):(\d{2}) \| ([^|]+?)(?:\s*\|\s*(.+))?$/;
 
     // YouTube URL 解析正則表達式
     const YOUTUBE_URL_REGEX = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:.*v=|.*\/)|youtu\.be\/)([^#\&\?]{11})/;
@@ -55,14 +55,17 @@ const SubtitleParser = (function() {
         const startTime = timeToSeconds(`${match[3]}:${match[4]}:${match[5]}`);
         const endTime = timeToSeconds(`${match[6]}:${match[7]}:${match[8]}`);
         // 將空格轉換為特殊標記，以便顯示時保留
-        const word = match[9].replace(/ /g, '␣').replace(/　/g, '␣␣');
+        const word = match[9].trim().replace(/ /g, '␣').replace(/　/g, '␣␣');
+        // 解析拼音（如果有）
+        const pinyin = match[10] ? match[10].trim() : null;
 
         return {
             line: lineNumber,
             wordIndex: wordIndex,
             startTime: startTime,
             endTime: endTime,
-            word: word
+            word: word,
+            pinyin: pinyin
         };
     }
 
@@ -80,14 +83,16 @@ const SubtitleParser = (function() {
                 wordIndex: 1,
                 startTime: startTime,
                 endTime: endTime,
-                word: '•••'
+                word: '•••',
+                pinyin: null
             },
             {
                 line: lineNumber,
                 wordIndex: 2,
                 startTime: endTime,
                 endTime: endTime,
-                word: '&nbsp;'
+                word: '&nbsp;',
+                pinyin: null
             }
         ];
     }
@@ -95,7 +100,7 @@ const SubtitleParser = (function() {
     /**
      * 解析完整的字幕檔案
      * @param {string} text - 字幕檔案內容
-     * @returns {object} 解析結果，包含 videoId, title, data
+     * @returns {object} 解析結果，包含 videoId, title, data, hasPinyin
      */
     function parseSubtitleFile(text) {
         if (!text || typeof text !== 'string') {
@@ -111,7 +116,16 @@ const SubtitleParser = (function() {
 
         const title = lines[0].trim();
         const videoUrl = lines[1].trim();
-        const subtitleLines = lines.slice(2);
+        let startIndex = 2;
+        let hasPinyin = false;
+
+        // 檢查是否有拼音標記
+        if (lines[2] === '#PINYIN_ENABLED') {
+            hasPinyin = true;
+            startIndex = 3;
+        }
+
+        const subtitleLines = lines.slice(startIndex);
 
         // 提取影片 ID
         const videoId = extractVideoId(videoUrl);
@@ -129,7 +143,7 @@ const SubtitleParser = (function() {
                 return; // 跳過無法解析的行
             }
 
-            const { line: lineNumber, wordIndex, startTime, endTime, word } = parsed;
+            const { line: lineNumber, wordIndex, startTime, endTime, word, pinyin } = parsed;
             let adjustedWordIndex = wordIndex;
 
             // 檢查是否需要插入緩衝圓點
@@ -155,7 +169,8 @@ const SubtitleParser = (function() {
                 wordIndex: adjustedWordIndex,
                 startTime: startTime,
                 endTime: endTime,
-                word: word
+                word: word,
+                pinyin: pinyin
             });
 
             previousEndTime = endTime;
@@ -170,7 +185,8 @@ const SubtitleParser = (function() {
             videoId: videoId,
             title: title,
             url: videoUrl,
-            data: subtitleData
+            data: subtitleData,
+            hasPinyin: hasPinyin
         };
     }
 

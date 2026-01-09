@@ -118,29 +118,93 @@ const LyricsOverlay = (function() {
     function createWordSpan(entry, currentTime) {
         const wordSpan = document.createElement('span');
         wordSpan.classList.add('yt-ktv-word');
-        wordSpan.style.fontSize = settings.fontSize + 'px';
 
-        // 底層文字（白色）
+        // 主容器
+        const mainTextWrapper = document.createElement('span');
+        mainTextWrapper.classList.add('yt-ktv-main-text-wrapper');
+        mainTextWrapper.style.position = 'relative';
+        mainTextWrapper.style.display = 'inline-flex';
+
+        // === 底層 stacked（拼音 + 主字）===
+        const stacked = document.createElement('span');
+        stacked.classList.add('yt-ktv-stacked');
+        stacked.style.display = 'inline-flex';
+        stacked.style.flexDirection = 'column';
+        stacked.style.alignItems = 'center';
+        stacked.style.marginRight = '4px';
+        stacked.style.position = 'relative';
+        stacked.style.verticalAlign = 'bottom';
+
+        // 拼音底層（如果有）
+        if (entry.pinyin) {
+            const pronunciationBase = document.createElement('span');
+            pronunciationBase.classList.add('yt-ktv-pronunciation');
+            pronunciationBase.style.fontSize = (settings.fontSize * 0.4) + 'px';
+            pronunciationBase.style.lineHeight = '1.2';
+            pronunciationBase.style.color = 'rgba(255, 255, 255, 0.8)';
+            pronunciationBase.style.whiteSpace = 'nowrap';
+            pronunciationBase.style.textShadow = '1px 1px 3px rgba(0, 0, 0, 0.8)';
+            pronunciationBase.textContent = entry.pinyin;
+            stacked.appendChild(pronunciationBase);
+        }
+
+        // 主字底層
         const baseText = document.createElement('span');
         baseText.classList.add('yt-ktv-base-text');
+        baseText.style.fontSize = settings.fontSize + 'px';
+        baseText.style.lineHeight = '1';
         baseText.innerHTML = entry.word
             .replace(/␣␣/g, '&nbsp;&nbsp;')
             .replace(/␣/g, '&nbsp;');
-        baseText.style.fontSize = settings.fontSize + 'px';
+        stacked.appendChild(baseText);
 
-        // 高亮層文字（動畫）
+        mainTextWrapper.appendChild(stacked);
+
+        // === 高亮層 wrapper（absolute 覆蓋）===
+        const highlightWrapper = document.createElement('span');
+        highlightWrapper.classList.add('yt-ktv-highlight-wrapper');
+        highlightWrapper.style.display = 'flex';
+        highlightWrapper.style.flexDirection = 'column';
+        highlightWrapper.style.alignItems = 'center';
+        highlightWrapper.style.position = 'absolute';
+        highlightWrapper.style.top = '0';
+        highlightWrapper.style.left = '0';
+        highlightWrapper.style.width = '100%';
+
+        let pinyinHighlight = null;
+
+        // 拼音高亮層（如果有）
+        if (entry.pinyin) {
+            pinyinHighlight = document.createElement('span');
+            pinyinHighlight.classList.add('yt-ktv-pronunciation', 'highlight');
+            pinyinHighlight.style.fontSize = (settings.fontSize * 0.4) + 'px';
+            pinyinHighlight.style.lineHeight = '1.2';
+            pinyinHighlight.style.whiteSpace = 'nowrap';
+            pinyinHighlight.style.overflow = 'hidden';
+            pinyinHighlight.style.clipPath = 'inset(0 100% 0 0)';
+            pinyinHighlight.textContent = entry.pinyin;
+            highlightWrapper.appendChild(pinyinHighlight);
+        }
+
+        // 主字高亮層
         const highlightText = document.createElement('span');
         highlightText.classList.add('yt-ktv-highlight-text');
+        highlightText.style.fontSize = settings.fontSize + 'px';
+        highlightText.style.lineHeight = '1';
+        highlightText.style.clipPath = 'inset(0 100% 0 0)';
         highlightText.innerHTML = entry.word
             .replace(/␣␣/g, '&nbsp;&nbsp;')
             .replace(/␣/g, '&nbsp;');
-        highlightText.style.fontSize = settings.fontSize + 'px';
+        highlightWrapper.appendChild(highlightText);
 
-        wordSpan.appendChild(baseText);
-        wordSpan.appendChild(highlightText);
+        mainTextWrapper.appendChild(highlightWrapper);
+        wordSpan.appendChild(mainTextWrapper);
 
-        // 啟動動畫
+        // 啟動動畫（主字幕和拼音同步）
         animateWordHighlight(entry, highlightText, currentTime);
+        if (pinyinHighlight) {
+            animateWordHighlight(entry, pinyinHighlight, currentTime);
+        }
 
         return wordSpan;
     }

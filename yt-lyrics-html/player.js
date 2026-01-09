@@ -284,6 +284,9 @@ function loadSubtitleFile() {
     reader.readAsText(file, "UTF-8");
 }
 
+// 全域變數：是否有拼音
+let hasPinyin = false;
+
 function parseSubtitleFormat(text) {
     // **拆分成行，保留行內空格**
     const lines = text.split("\n").filter(line => line.trim() !== "");
@@ -294,7 +297,16 @@ function parseSubtitleFormat(text) {
     }
 
     const videoUrl = lines[1]; // 第二行是影片網址
-    const subtitleLines = lines.slice(2); // 從第三行開始是字幕內容
+    let startIndex = 2;
+    hasPinyin = false;
+
+    // 檢查是否有拼音標記
+    if (lines[2] === "#PINYIN_ENABLED") {
+        hasPinyin = true;
+        startIndex = 3;
+    }
+
+    const subtitleLines = lines.slice(startIndex); // 從標記後開始是字幕內容
 
     // 直接載入 YouTube 影片
     let videoId = extractVideoId(videoUrl);
@@ -311,15 +323,19 @@ function parseSubtitleFormat(text) {
     let previousEndTime = 0; // 記錄上一個字的結束時間
     let previousLine = 0; // 記錄上一個行的編號
 
+    // 擴充格式的正則表達式（支援拼音欄位）
+    const extendedRegex = /Line (\d+) \| Word (\d+) \| (\d{2}):(\d{2}):(\d{2}) → (\d{2}):(\d{2}):(\d{2}) \| ([^|]+)(?:\| (.*))?/;
+
     subtitleLines.forEach((line, index) => {
         // **解析字幕行**
-        const match = line.match(/Line (\d+) \| Word (\d+) \| (\d{2}):(\d{2}):(\d{2}) → (\d{2}):(\d{2}):(\d{2}) \| (.+)/);
+        const match = line.match(extendedRegex);
         if (match) {
             let lineNumber = parseInt(match[1]); // 目前的行數
             let wordIndex = parseInt(match[2]); // 目前的單字索引
             let startTime = timeToSeconds(`${match[3]}:${match[4]}:${match[5]}`);
             let endTime = timeToSeconds(`${match[6]}:${match[7]}:${match[8]}`);
-            let wordText = match[9].replace(/ /g, "␣").replace(/　/g, "␣␣"); // 保留空格
+            let wordText = match[9].trim().replace(/ /g, "␣").replace(/　/g, "␣␣"); // 保留空格
+            let pinyinText = match[10] ? match[10].trim() : null; // 拼音（如果有）
 
             // **檢查是否需要插入圓圈**
             if ((lineNumber !== previousLine && startTime - previousEndTime > 4) || (index === 0 && startTime >= 4)) {
@@ -332,14 +348,16 @@ function parseSubtitleFormat(text) {
                     wordIndex: 1, // 圓圈永遠是該行的第一個字
                     startTime: circleStartTime,
                     endTime: circleEndTime,
-                    word: "•••"
+                    word: "•••",
+                    pinyin: null
                 });
                 subtitleData.push({
                     line: lineNumber,
                     wordIndex: 2, // 圓圈永遠是該行的第一個字
                     startTime: circleEndTime,
                     endTime: circleEndTime,
-                    word: "&nbsp;"
+                    word: "&nbsp;",
+                    pinyin: null
                 });
 
                 wordIndex += 2; // 讓原始行的第一個字變成 `Word 2`
@@ -351,7 +369,8 @@ function parseSubtitleFormat(text) {
                 wordIndex: wordIndex,
                 startTime: startTime,
                 endTime: endTime,
-                word: wordText
+                word: wordText,
+                pinyin: pinyinText
             });
 
             previousEndTime = endTime; // 更新上一個字的結束時間
@@ -365,6 +384,7 @@ function parseSubtitleFormat(text) {
     }
 
     console.log("✅ 處理後的字幕數據：", subtitleData);
+    console.log("📝 拼音模式：", hasPinyin);
 }
 
 // ⏲ 轉換時間格式 (00:18:98 → 秒數)
@@ -505,6 +525,34 @@ function updateLyricsDisplay(currentTime) {
         wordSpan.classList.add("word");
         wordSpan.style.fontSize = currentFontSize + "px";
 
+        // 建立容器（垂直排列拼音和主字幕）
+        let wordContainer = document.createElement("div");
+        wordContainer.classList.add("word-container");
+
+        // 拼音層（如果有拼音）
+        let pinyinHighlight = null;
+        if (entry.pinyin) {
+            let pinyinSpan = document.createElement("span");
+            pinyinSpan.classList.add("pinyin-text");
+            pinyinSpan.style.fontSize = (currentFontSize * 0.5) + "px";
+
+            let pinyinBase = document.createElement("span");
+            pinyinBase.classList.add("pinyin-base-text");
+            pinyinBase.textContent = entry.pinyin;
+
+            pinyinHighlight = document.createElement("span");
+            pinyinHighlight.classList.add("pinyin-highlight-text");
+            pinyinHighlight.textContent = entry.pinyin;
+
+            pinyinSpan.appendChild(pinyinBase);
+            pinyinSpan.appendChild(pinyinHighlight);
+            wordContainer.appendChild(pinyinSpan);
+        }
+
+        // 主字幕層
+        let mainTextWrapper = document.createElement("span");
+        mainTextWrapper.classList.add("main-text-wrapper");
+
         let baseText = document.createElement("span");
         baseText.classList.add("base-text");
         baseText.innerHTML = entry.word.replace(/␣␣/g, "&nbsp;&nbsp;").replace(/␣/g, "&nbsp;");
@@ -515,10 +563,17 @@ function updateLyricsDisplay(currentTime) {
         highlightText.innerHTML = entry.word.replace(/␣␣/g, "&nbsp;&nbsp;").replace(/␣/g, "&nbsp;");
         highlightText.style.fontSize = currentFontSize + "px";
 
-        wordSpan.appendChild(baseText);
-        wordSpan.appendChild(highlightText);
+        mainTextWrapper.appendChild(baseText);
+        mainTextWrapper.appendChild(highlightText);
+        wordContainer.appendChild(mainTextWrapper);
 
+        wordSpan.appendChild(wordContainer);
+
+        // 啟動動畫（主字幕和拼音同步）
         animateWordHighlight(entry, highlightText, currentTime);
+        if (pinyinHighlight) {
+            animateWordHighlight(entry, pinyinHighlight, currentTime);
+        }
 
         return wordSpan;
     }

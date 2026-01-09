@@ -118,6 +118,7 @@
                 currentSubtitle = subtitle;
                 LyricsOverlay.setSubtitleData(subtitle.data);
                 console.log('[YT-KTV] Subtitle loaded:', subtitle.title);
+                console.log('[YT-KTV] Sample data (first 3):', JSON.stringify(subtitle.data.slice(0, 3)));
 
                 notifyPopup({
                     type: 'VIDEO_STATUS',
@@ -221,6 +222,7 @@
         const currentVideoId = YouTubeDetector.getCurrentVideoId();
         if (currentVideoId === parsedSubtitle.videoId) {
             currentSubtitle = parsedSubtitle;
+            console.log('[YT-KTV] Loading subtitle data, sample (first 3):', JSON.stringify(parsedSubtitle.data.slice(0, 3)));
             LyricsOverlay.setSubtitleData(parsedSubtitle.data);
 
             notifyPopup({

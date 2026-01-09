@@ -25,8 +25,22 @@
 
             <!-- 歌詞輸入框 -->
             <div class="lyrics-input-container">
-                <textarea id="lyricsInput" placeholder="輸入歌詞，每句一行"></textarea>
-                <br>
+                <div class="dual-textarea-container">
+                    <div class="textarea-group">
+                        <label for="lyricsInput">主要歌詞</label>
+                        <textarea id="lyricsInput" placeholder="輸入歌詞，每句一行"></textarea>
+                    </div>
+                    <div class="textarea-group">
+                        <label for="pinyinInput">拼音（選填）</label>
+                        <textarea id="pinyinInput" placeholder="輸入拼音，每句一行&#10;需與主歌詞結構對齊"></textarea>
+                    </div>
+                </div>
+                <div class="pinyin-controls">
+                    <label class="pinyin-checkbox-label">
+                        <input type="checkbox" id="enablePinyin"> 啟用拼音字幕
+                    </label>
+                    <button type="button" class="validate-btn" onclick="validateAlignment()">驗證對齊</button>
+                </div>
                 <div class="lyrics-button-container">
                     <button class="load-lyrics-btn" onclick="loadLyrics()">載入歌詞</button>
                 </div>

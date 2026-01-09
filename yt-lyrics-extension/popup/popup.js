@@ -316,7 +316,16 @@
 
         const title = lines[0].trim();
         const videoUrl = lines[1].trim();
-        const subtitleLines = lines.slice(2);
+        let startIndex = 2;
+        let hasPinyin = false;
+
+        // 檢查是否有拼音標記
+        if (lines[2] === '#PINYIN_ENABLED') {
+            hasPinyin = true;
+            startIndex = 3;
+        }
+
+        const subtitleLines = lines.slice(startIndex);
 
         // 提取影片 ID
         const videoIdMatch = videoUrl.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:.*v=|.*\/)|youtu\.be\/)([^#\&\?]{11})/);
@@ -328,7 +337,8 @@
         const subtitleData = [];
         let previousEndTime = 0;
         let previousLine = 0;
-        const regex = /Line (\d+) \| Word (\d+) \| (\d{2}):(\d{2}):(\d{2}) → (\d{2}):(\d{2}):(\d{2}) \| (.+)/;
+        // 支援拼音欄位的 regex
+        const regex = /Line (\d+) \| Word (\d+) \| (\d{2}):(\d{2}):(\d{2}) → (\d{2}):(\d{2}):(\d{2}) \| ([^|]+?)(?:\s*\|\s*(.+))?$/;
 
         subtitleLines.forEach((line, index) => {
             const match = line.match(regex);
@@ -338,7 +348,8 @@
             let wordIndex = parseInt(match[2], 10);
             const startTime = timeToSeconds(`${match[3]}:${match[4]}:${match[5]}`);
             const endTime = timeToSeconds(`${match[6]}:${match[7]}:${match[8]}`);
-            const word = match[9].replace(/ /g, '␣').replace(/　/g, '␣␣');
+            const word = match[9].trim().replace(/ /g, '␣').replace(/　/g, '␣␣');
+            const pinyin = match[10] ? match[10].trim() : null;
 
             // 插入緩衝圓點
             const isNewLine = lineNumber !== previousLine;
@@ -352,14 +363,16 @@
                     wordIndex: 1,
                     startTime: circleStartTime,
                     endTime: startTime,
-                    word: '•••'
+                    word: '•••',
+                    pinyin: null
                 });
                 subtitleData.push({
                     line: lineNumber,
                     wordIndex: 2,
                     startTime: startTime,
                     endTime: startTime,
-                    word: '&nbsp;'
+                    word: '&nbsp;',
+                    pinyin: null
                 });
                 wordIndex += 2;
             }
@@ -369,7 +382,8 @@
                 wordIndex: wordIndex,
                 startTime: startTime,
                 endTime: endTime,
-                word: word
+                word: word,
+                pinyin: pinyin
             });
 
             previousEndTime = endTime;
@@ -384,7 +398,8 @@
             videoId,
             title,
             url: videoUrl,
-            data: subtitleData
+            data: subtitleData,
+            hasPinyin: hasPinyin
         };
     }
 

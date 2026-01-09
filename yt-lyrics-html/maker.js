@@ -54,10 +54,14 @@ function clearAllRecords() {
     currentWordIndex = 0;
     timestamps = [];
     lyrics = [];
+    pinyinLyrics = [];
+    pinyinEnabled = false;
     totalWordsInSong = 0;
 
     // 清空歌詞輸入框
     document.getElementById('lyricsInput').value = '';
+    document.getElementById('pinyinInput').value = '';
+    document.getElementById('enablePinyin').checked = false;
 
     // 更新 UI
     displayLyrics();
@@ -114,13 +118,18 @@ let timerInterval;
 
 // 歌詞變數定義
 let lyrics = [];  // 儲存逐字拆分的歌詞
+let pinyinLyrics = [];  // 儲存逐字拆分的拼音
+let pinyinEnabled = false;  // 是否啟用拼音
 let currentWordIndex = 0;  // 當前變色的字索引
 let timestamps = [];  // 記錄按鍵時間
 
 // 讀取歌詞
-let totalWordsInSong = 0; 
+let totalWordsInSong = 0;
 function loadLyrics() {
     let inputText = document.getElementById("lyricsInput").value.trim();
+    let pinyinInput = document.getElementById("pinyinInput").value.trim();
+    pinyinEnabled = document.getElementById("enablePinyin").checked;
+
     if (!inputText) {
         alert("❌ 請輸入歌詞！");
         return;
@@ -131,12 +140,124 @@ function loadLyrics() {
         .map(line => parseLyricsLine(line)) // 解析 `[]` 並拆分詞組
         .filter(line => line.length > 0); // 移除空行
 
+    // 解析拼音（如果啟用）
+    if (pinyinEnabled && pinyinInput) {
+        let pinyinLines = pinyinInput.split("\n")
+            .map(line => parseLyricsLine(line))
+            .filter(line => line.length > 0);
+
+        // 驗證對齊
+        if (!checkAlignment(lyrics, pinyinLines)) {
+            alert("⚠️ 警告：拼音與主歌詞的字數不對齊！\n請檢查每行的分割結果。");
+            // 仍允許繼續，但顯示警告
+        }
+
+        pinyinLyrics = pinyinLines;
+    } else {
+        pinyinLyrics = [];
+    }
+
     totalWordsInSong = lyrics.reduce((sum, line) => sum + line.length, 0); // 計算總詞數
     currentWordIndex = 0;
     currentLineIndex = 0;
 
     displayLyrics();
     updateProgressBar(); // 確保進度條歸零
+}
+
+// 檢查歌詞與拼音對齊
+function checkAlignment(mainLyrics, pinyinLines) {
+    if (mainLyrics.length !== pinyinLines.length) {
+        return false;
+    }
+
+    for (let i = 0; i < mainLyrics.length; i++) {
+        if (mainLyrics[i].length !== pinyinLines[i].length) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// 驗證對齊按鈕
+function validateAlignment() {
+    let inputText = document.getElementById("lyricsInput").value.trim();
+    let pinyinInput = document.getElementById("pinyinInput").value.trim();
+    let validateBtn = document.querySelector(".validate-btn");
+
+    if (!inputText) {
+        alert("請先輸入主歌詞！");
+        return;
+    }
+
+    if (!pinyinInput) {
+        alert("請先輸入拼音！");
+        return;
+    }
+
+    // 解析兩者
+    let mainLines = inputText.split("\n")
+        .map(line => parseLyricsLine(line))
+        .filter(line => line.length > 0);
+
+    let pinyinLines = pinyinInput.split("\n")
+        .map(line => parseLyricsLine(line))
+        .filter(line => line.length > 0);
+
+    // 檢查行數
+    if (mainLines.length !== pinyinLines.length) {
+        validateBtn.classList.remove("success");
+        validateBtn.classList.add("error");
+        validateBtn.textContent = "行數不符";
+        setTimeout(() => {
+            validateBtn.classList.remove("error");
+            validateBtn.textContent = "驗證對齊";
+        }, 2000);
+        alert(`❌ 行數不對齊！\n主歌詞：${mainLines.length} 行\n拼音：${pinyinLines.length} 行`);
+        return;
+    }
+
+    // 檢查每行字數
+    let mismatchLines = [];
+    for (let i = 0; i < mainLines.length; i++) {
+        if (mainLines[i].length !== pinyinLines[i].length) {
+            mismatchLines.push({
+                line: i + 1,
+                mainCount: mainLines[i].length,
+                pinyinCount: pinyinLines[i].length
+            });
+        }
+    }
+
+    if (mismatchLines.length > 0) {
+        validateBtn.classList.remove("success");
+        validateBtn.classList.add("error");
+        validateBtn.textContent = "字數不符";
+        setTimeout(() => {
+            validateBtn.classList.remove("error");
+            validateBtn.textContent = "驗證對齊";
+        }, 2000);
+
+        let details = mismatchLines.slice(0, 5).map(m =>
+            `第 ${m.line} 行：主歌詞 ${m.mainCount} 字，拼音 ${m.pinyinCount} 字`
+        ).join("\n");
+
+        if (mismatchLines.length > 5) {
+            details += `\n...還有 ${mismatchLines.length - 5} 行不對齊`;
+        }
+
+        alert(`❌ 部分行的字數不對齊！\n\n${details}`);
+        return;
+    }
+
+    // 全部對齊
+    validateBtn.classList.remove("error");
+    validateBtn.classList.add("success");
+    validateBtn.textContent = "對齊成功";
+    setTimeout(() => {
+        validateBtn.classList.remove("success");
+        validateBtn.textContent = "驗證對齊";
+    }, 2000);
 }
 
 // 解析單行歌詞，根據 `/` 來標示獨立字元組
@@ -322,7 +443,13 @@ function displayLyrics() {
     displayArea.innerHTML = lyrics[currentLineIndex]
         .filter(word => word.trim() !== "") // 過濾掉純空格
         .map((word, index) => {
-            return `<span id="word-${index}" class="word">${word}</span>`;
+            // 如果啟用拼音且有對應的拼音
+            let pinyinText = "";
+            if (pinyinEnabled && pinyinLyrics[currentLineIndex] &&
+                pinyinLyrics[currentLineIndex][index]) {
+                pinyinText = `<span class="pinyin-preview">${pinyinLyrics[currentLineIndex][index]}</span>`;
+            }
+            return `<span id="word-${index}" class="word">${pinyinText}<span class="main-word">${word}</span></span>`;
         }).join("");
 
     updateLyricsStatus()
@@ -446,12 +573,19 @@ function nextChar() {
 
         // 更新上一個字的結束時間
         if (currentWordIndex > 0) {
-            let lastTimestamp = timestamps.find(t => 
+            let lastTimestamp = timestamps.find(t =>
                 t.line === currentLineIndex + 1 && t.wordIndex === currentWordIndex
             );
             if (lastTimestamp) {
                 lastTimestamp.end = startTime; // ✅ 更新上一個字的結束時間
             }
+        }
+
+        // 取得當前字的拼音（如果有）
+        let currentPinyin = null;
+        if (pinyinEnabled && pinyinLyrics[currentLineIndex] &&
+            pinyinLyrics[currentLineIndex][currentWordIndex]) {
+            currentPinyin = pinyinLyrics[currentLineIndex][currentWordIndex];
         }
 
         // 記錄當前字的時間
@@ -461,7 +595,8 @@ function nextChar() {
             wordIndex: currentWordIndex + 1,  // ✅ 讓 wordIndex 從 1 開始
             start: startTime,
             end: isLastWord ? endTime : "",  // ✅ 如果是最後一個字，設定 endTime
-            word: lyrics[currentLineIndex][currentWordIndex]
+            word: lyrics[currentLineIndex][currentWordIndex],
+            pinyin: currentPinyin  // ✅ 新增拼音欄位
         };
 
         // 推送時間紀錄
@@ -474,7 +609,7 @@ function nextChar() {
 
         // 按完最後一個字後自動換行
         if (currentWordIndex >= lyrics[currentLineIndex].length) {
-            setTimeout(() => { 
+            setTimeout(() => {
                 nextLine();
             }, 200);
         }
@@ -620,21 +755,35 @@ function exportTimestamps() {
     let videoTitle = player.getVideoData().title || "ktv_timestamps";
     let videoUrl = document.getElementById("videoUrl").value || "未知網址";
 
-    // 產生時間紀錄的內容，包含標題與網址
-    let content = `${videoTitle}\n${videoUrl}\n\n` +
-        timestamps.map(t =>
-            `Line ${t.line} | Word ${t.wordIndex} | ${t.start} → ${t.end} | ${t.word}`
-        ).join("\n");
+    // 建立內容標頭
+    let header = `${videoTitle}\n${videoUrl}\n`;
+
+    // 如果啟用拼音，加入標記
+    if (pinyinEnabled) {
+        header += "#PINYIN_ENABLED\n";
+    }
+
+    header += "\n";
+
+    // 產生時間紀錄的內容
+    let content = header + timestamps.map(t => {
+        let baseLine = `Line ${t.line} | Word ${t.wordIndex} | ${t.start} → ${t.end} | ${t.word}`;
+        // 如果啟用拼音，加入拼音欄位
+        if (pinyinEnabled) {
+            baseLine += ` | ${t.pinyin || ''}`;
+        }
+        return baseLine;
+    }).join("\n");
 
     // 創建下載連結
     let blob = new Blob([content], { type: "text/plain" });
     let a = document.createElement("a");
-    
+
     // 設定下載的檔案名稱為影片標題
     let safeTitle = videoTitle.replace(/[<>:"/\\|?*]+/g, ""); // 避免非法字元
     a.href = URL.createObjectURL(blob);
     a.download = `${safeTitle}.txt`; // 使用影片標題作為檔名
-    
+
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

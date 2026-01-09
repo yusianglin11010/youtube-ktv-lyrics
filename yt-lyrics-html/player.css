@@ -517,3 +517,45 @@ input[type="color"] {
     transition: clip-path 0.05s linear, color 0.3s, text-shadow 0.3s, font-size 0.2s ease-in-out;
     font-size: inherit; /* 讓它繼承 .word 的大小 */
 }
+
+/* ===== 拼音字幕樣式 ===== */
+
+/* 字容器 - 垂直排列拼音和主字幕 */
+.word-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+/* 拼音文字容器 */
+.pinyin-text {
+    position: relative;
+    display: block;
+    line-height: 1.2;
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+/* 拼音底層文字 */
+.pinyin-base-text {
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* 拼音變色層 */
+.pinyin-highlight-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.05s linear, color 0.3s, text-shadow 0.3s;
+}
+
+/* 主字幕容器 */
+.main-text-wrapper {
+    position: relative;
+    display: block;
+}
