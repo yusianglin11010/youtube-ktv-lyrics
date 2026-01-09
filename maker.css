@@ -1,0 +1,796 @@
+/* 🔷 全局樣式 */
+body {
+    font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    text-align: center;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+    color: #2c3e50;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 100%;
+    width: 100%;
+    margin: auto;
+    padding: 30px 40px;
+    border-radius: 20px;
+    background: white;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 20px 15px;
+        border-radius: 15px;
+    }
+}
+
+/* 標題區域 */
+h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* 副標題 */
+.subtitle {
+    font-size: 13px;
+    color: #7f8c8d;
+    margin-top: -8px;
+    margin-bottom: 24px;
+    font-style: italic;
+}
+
+/* Github 連結 */
+.github-link {
+    color: #5b9bd5;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+.github-link:hover {
+    color: #4a8bc2;
+    text-decoration: underline;
+}
+
+/* 手機：標題調整 */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 26px;
+    }
+
+    .subtitle {
+        font-size: 12px;
+    }
+}
+/* 分隔線 */
+.divider {
+    width: 100%;
+    height: 2px;
+    background: #d9d9d9; /* 淺灰色 */
+    margin: 15px 0;
+    border-radius: 2px;
+}
+
+/* 🎥 影片與歌詞輸入區（左右排列） */
+.top-section {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 30px;
+    gap: 24px;
+}
+
+.video-container {
+    width: 65%;
+    text-align: left;
+    background: linear-gradient(135deg, #f8f9fb 0%, #f1f3f7 100%);
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.3s ease;
+}
+
+.video-container:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* 平板：上下排列 */
+@media (max-width: 1024px) {
+    .top-section {
+        flex-direction: column;
+        width: 100%;
+        gap: 20px;
+    }
+
+    .video-container {
+        width: 100%;
+    }
+}
+
+.video-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.url-input {
+    width: 100%;
+    max-width: 500px;
+    padding: 12px 16px;
+    border: 2px solid #e1e8ed;
+    border-radius: 12px;
+    font-size: 15px;
+    background: #fff;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+.url-input:focus {
+    border-color: #5b9bd5;
+    box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.1);
+}
+
+.load-video-btn, .load-lyrics-btn {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #5b9bd5 0%, #4a8bc2 100%);
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(91, 155, 213, 0.3);
+}
+
+.load-video-btn:hover, .load-lyrics-btn:hover {
+    background: linear-gradient(135deg, #4a8bc2 0%, #3d7cb0 100%);
+    box-shadow: 0 6px 16px rgba(91, 155, 213, 0.4);
+    transform: translateY(-2px);
+}
+
+.load-video-btn:active, .load-lyrics-btn:active {
+    transform: translateY(0);
+}
+
+/* 手機：按鈕更大更好點 */
+@media (max-width: 768px) {
+    .url-input {
+        font-size: 16px; /* 避免 iOS 自動縮放 */
+        padding: 14px 16px;
+    }
+
+    .load-video-btn, .load-lyrics-btn {
+        padding: 14px 20px;
+        font-size: 16px;
+    }
+}
+
+#player {
+    width: 100%;
+    max-width: 100%;
+    height: 480px;
+    margin-top: 20px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* 響應式影片 */
+@media (max-width: 1024px) {
+    #player {
+        height: 400px;
+    }
+}
+
+@media (max-width: 768px) {
+    #player {
+        max-width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+    }
+}
+
+/* 🎤 KTV 歌詞顯示區 - 日系簡約風 */
+#lyricsContainer {
+    width: 100%;
+    max-width: 100%;
+    min-height: 120px;
+    padding: 40px 24px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#lyricsDisplay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    white-space: pre-wrap;
+    font-size: 36px;
+    font-weight: 500;
+    color: #333;
+    line-height: 1.8;
+}
+
+.word {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 2px;
+    margin: 2px;
+    transition: all 0.2s ease;
+}
+
+.word.highlight {
+    color: #5b9bd5;
+    font-weight: 600;
+    transform: scale(1.05);
+}
+
+.word.highlight .pinyin-preview {
+    color: #5b9bd5;
+}
+
+/* 拼音預覽樣式 */
+.pinyin-preview {
+    font-size: 14px;
+    color: #7f8c8d;
+    font-weight: 400;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+
+.main-word {
+    display: block;
+}
+
+/* 響應式歌詞顯示 */
+@media (max-width: 768px) {
+    #lyricsContainer {
+        width: 95%;
+        min-height: 100px;
+        padding: 32px 16px;
+    }
+
+    #lyricsDisplay {
+        font-size: 28px;
+        gap: 6px;
+    }
+
+    .word {
+        padding: 3px 2px;
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 480px) {
+    #lyricsDisplay {
+        font-size: 24px;
+    }
+
+    .word {
+        padding: 2px 1px;
+        font-size: 24px;
+    }
+}
+
+/* 📝 歌詞輸入區 */
+.lyrics-input-container {
+    width: 35%;
+    background: linear-gradient(135deg, #f8f9fb 0%, #f1f3f7 100%);
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    flex-direction: column;
+    transition: box-shadow 0.3s ease;
+}
+
+.lyrics-input-container:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* 雙輸入框容器 */
+.dual-textarea-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.textarea-group {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.textarea-group label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+#lyricsInput,
+#pinyinInput {
+    width: 100%;
+    height: 140px;
+    padding: 14px 16px;
+    font-size: 15px;
+    border-radius: 12px;
+    border: 2px solid #e1e8ed;
+    background: #fff;
+    color: #2c3e50;
+    resize: vertical;
+    transition: all 0.3s ease;
+    outline: none;
+    font-family: 'Noto Sans', sans-serif;
+    line-height: 1.6;
+}
+
+#lyricsInput:focus,
+#pinyinInput:focus {
+    border-color: #5b9bd5;
+    box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.1);
+}
+
+#pinyinInput {
+    letter-spacing: 0.5px;
+}
+
+/* 拼音控制區 */
+.pinyin-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 12px 0;
+    padding: 12px 16px;
+    background: rgba(91, 155, 213, 0.08);
+    border-radius: 10px;
+    border: 1px solid rgba(91, 155, 213, 0.15);
+}
+
+.pinyin-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #2c3e50;
+    cursor: pointer;
+}
+
+.pinyin-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #5b9bd5;
+}
+
+.validate-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #f0f3f7;
+    border: 1px solid #e1e8ed;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #2c3e50;
+    transition: all 0.3s ease;
+}
+
+.validate-btn:hover {
+    background: #e8ecf1;
+    border-color: #5b9bd5;
+}
+
+.validate-btn.success {
+    background: rgba(46, 204, 113, 0.15);
+    border-color: rgba(46, 204, 113, 0.4);
+    color: #27ae60;
+}
+
+.validate-btn.error {
+    background: rgba(231, 76, 60, 0.15);
+    border-color: rgba(231, 76, 60, 0.4);
+    color: #e74c3c;
+}
+
+/* 平板：歌詞輸入區寬度 100% */
+@media (max-width: 1024px) {
+    .lyrics-input-container {
+        width: 100%;
+    }
+
+    #lyricsInput,
+    #pinyinInput {
+        height: 120px;
+    }
+}
+
+/* 手機：調整高度和字體 */
+@media (max-width: 768px) {
+    #lyricsInput,
+    #pinyinInput {
+        height: 100px;
+        font-size: 16px; /* 避免 iOS 自動縮放 */
+    }
+
+    .pinyin-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .validate-btn {
+        width: 100%;
+        padding: 10px 16px;
+    }
+}
+
+
+#timestampsDisplay {
+    width: 90%;
+    height: 130px;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #c9c8c835;
+    background: #c9c8c835;
+    color: #000;
+    resize: none;
+}
+
+.lyrics-controls {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.download-button-container {
+    width: 100%;
+    margin-top: 10px;
+    text-align: right;
+}
+
+.download-button-container button {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+}
+
+.download-button-container button:hover {
+    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+    box-shadow: 0 6px 16px rgba(243, 156, 18, 0.4);
+    transform: translateY(-2px);
+}
+
+.download-button-container button:active {
+    transform: translateY(0);
+}
+
+/* 手機：按鈕調整 */
+@media (max-width: 768px) {
+    .download-button-container button {
+        padding: 14px 20px;
+        font-size: 16px;
+    }
+}
+
+/* 🎮 控制按鈕區 */
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.controls button {
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    border: 2px solid #e1e8ed;
+    border-radius: 12px;
+    cursor: pointer;
+    background: white;
+    color: #2c3e50;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.controls button:hover {
+    background: #f8f9fb;
+    border-color: #5b9bd5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.controls button:active,
+.controls button.active {
+    background: linear-gradient(135deg, #5b9bd5 0%, #4a8bc2 100%);
+    border-color: #5b9bd5;
+    color: white;
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 8px rgba(91, 155, 213, 0.4);
+}
+
+/* 手機：按鈕更大 */
+@media (max-width: 768px) {
+    .controls {
+        gap: 8px;
+        width: 100%;
+        padding: 0 10px;
+    }
+
+    .controls button {
+        padding: 14px 18px;
+        font-size: 14px;
+        flex: 1 1 auto;
+        min-width: 45%;
+    }
+}
+
+@media (max-width: 480px) {
+    .controls button {
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+}
+
+/* Timestamp Table */
+/* 🎨 表格外框 */
+.table-wrapper {
+    min-height: 180px;
+    max-height: 180px;
+    overflow-y: auto;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e1e8ed;
+}
+
+/* 📝 表格本體 */
+#timestampsTable {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+}
+
+/* 🔠 標題列 */
+#timestampsTable thead {
+    position: sticky;
+    top: 0;
+    background: linear-gradient(135deg, #5b9bd5 0%, #4a8bc2 100%);
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 10;
+}
+
+#timestampsTable thead th {
+    padding: 12px 14px;
+    text-align: center;
+    border-bottom: none;
+}
+
+/* 🔹 每個欄位樣式 */
+#timestampsTable td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f0f3f7;
+    text-align: center;
+    color: #2c3e50;
+    font-size: 13px;
+}
+
+#timestampsTable tbody tr:hover {
+    background: #f8f9fb;
+}
+
+#timestampsTable tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* 自訂捲軸 */
+.table-wrapper::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #f0f3f7;
+    border-radius: 12px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 12px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+/* 手機：表格字體調整 */
+@media (max-width: 768px) {
+    .table-wrapper {
+        max-height: 150px;
+    }
+
+    #timestampsTable thead {
+        font-size: 12px;
+    }
+
+    #timestampsTable td {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+}
+
+/* 進度條外框 */
+.progress-container {
+    width: 100vw;
+    max-width: 100%;
+    height: 4px;
+    background: #e1e8ed;
+    border-radius: 0px;
+    overflow: hidden;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+/* 🔹 進度條本體 */
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    border-radius: 0px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+}
+
+/* 進度條動畫效果 */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+.progress-bar {
+    animation: pulse 2s infinite;
+}
+
+/* 🔹 進度UI顯示歌詞同步狀態 */
+.lyrics-status {
+    font-size: 14px;
+    font-weight: 600;
+    color: #5b9bd5;
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(91, 155, 213, 0.1) 0%, rgba(74, 139, 194, 0.1) 100%);
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(91, 155, 213, 0.2);
+}
+
+/* 🟢 當行已完成時進度UI變色 */
+.lyrics-status.complete {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(39, 174, 96, 0.1) 100%);
+    color: #27ae60;
+    border-color: rgba(46, 204, 113, 0.3);
+}
+
+/* 手機：狀態文字調整 */
+@media (max-width: 768px) {
+    .lyrics-status {
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+}
+
+/* 🔥 煙火容器 */
+#fireworks-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* 🎆 煙火核心 */
+.firework {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: #ffcc00;
+    border-radius: 50%;
+    opacity: 1;
+    animation: explode 1.2s ease-out forwards;
+}
+
+/* 💥 煙火爆炸的粒子 */
+.particle {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background-color: white;
+    border-radius: 50%;
+    opacity: 1;
+    animation: particle-explode 1.2s ease-out forwards;
+}
+
+/* ✨ 煙火核心爆炸動畫 */
+@keyframes explode {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 1; transform: scale(3); }
+    100% { opacity: 0; transform: scale(5); }
+}
+
+/* 🌟 煙火粒子爆炸動畫 */
+@keyframes particle-explode {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--x), var(--y)) scale(0.5);
+    }
+}
+
+/* 🔥 煙火模式的黑色半透明背景 */
+#fireworks-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0); /* 初始透明 */
+    z-index: 9998; /* 比煙火稍低，確保煙火在上面 */
+    transition: background 1s ease-in-out;
+    pointer-events: none; /* 避免影響操作 */
+}
+
+/* 🌙 當煙火啟動時的黑色背景 */
+#fireworks-overlay.active {
+    background: rgba(0, 0, 0, 0.6); /* 60% 黑色半透明 */
+}
