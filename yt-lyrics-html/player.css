@@ -133,6 +133,54 @@ input[type="color"] {
     padding: 0;
 }
 
+/* 🎨 預設顏色按鈕網格 */
+.color-preset-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+    margin-bottom: 12px;
+}
+
+.color-preset-btn {
+    width: 36px;
+    height: 36px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.color-preset-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.color-preset-btn.selected {
+    border-color: #000;
+    border-width: 3px;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+/* 自訂顏色按鈕 */
+.color-custom-btn {
+    background: linear-gradient(135deg,
+        red 0%, yellow 17%, lime 33%, cyan 50%,
+        blue 67%, magenta 83%, red 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+}
+
+.color-custom-btn:hover {
+    transform: scale(1.15);
+}
+
 /* 載入字型 */
 @font-face {
     font-family: 'Huninn';

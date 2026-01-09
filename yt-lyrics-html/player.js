@@ -40,8 +40,22 @@ document.getElementById("fontSelector").addEventListener("change", function () {
 });
 
 // 監聽使用者選擇的變色字體顏色
-document.getElementById("highlightTextColor").addEventListener("input", updateHighlightColor);
-document.getElementById("highlightShadowColor").addEventListener("input", updateHighlightColor);
+let colorUpdateTimeout = null;
+
+document.getElementById("highlightTextColor").addEventListener("input", debouncedUpdateHighlightColor);
+document.getElementById("highlightShadowColor").addEventListener("input", debouncedUpdateHighlightColor);
+
+function debouncedUpdateHighlightColor() {
+    // 清除之前的計時器
+    if (colorUpdateTimeout) {
+        clearTimeout(colorUpdateTimeout);
+    }
+
+    // 設定新的計時器，300ms 後才執行
+    colorUpdateTimeout = setTimeout(() => {
+        updateHighlightColor();
+    }, 300);
+}
 
 function updateHighlightColor() {
     let highlightTextColor = document.getElementById("highlightTextColor").value;
@@ -556,4 +570,55 @@ function updateLyricsDisplay(currentTime) {
         currentEvenLineIndex += 2;
     }
 }
+
+// 🎨 預設顏色按鈕點擊事件
+document.querySelectorAll('.color-preset-btn:not(.color-custom-btn)').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const selectedColor = this.getAttribute('data-color');
+
+        // 更新隱藏的 color picker 值
+        document.getElementById('highlightTextColor').value = selectedColor;
+
+        // 移除所有按鈕的選中狀態
+        document.querySelectorAll('.color-preset-btn').forEach(b => b.classList.remove('selected'));
+
+        // 標記當前按鈕為選中
+        this.classList.add('selected');
+
+        // 立即套用顏色（不使用 debounce，因為是單次點擊）
+        updateHighlightColor();
+    });
+});
+
+// 🎨 自訂顏色按鈕點擊事件
+document.getElementById('customColorBtn').addEventListener('click', function() {
+    // 觸發隱藏的 color picker
+    const colorPicker = document.getElementById('highlightTextColor');
+    colorPicker.click();
+
+    // 監聽 color picker 的變更
+    colorPicker.addEventListener('change', function() {
+        // 移除所有預設按鈕的選中狀態
+        document.querySelectorAll('.color-preset-btn').forEach(b => b.classList.remove('selected'));
+
+        // 標記「自訂」按鈕為選中
+        document.getElementById('customColorBtn').classList.add('selected');
+
+        // 立即套用顏色
+        updateHighlightColor();
+    }, { once: true }); // 只執行一次
+});
+
+// 🎨 頁面載入時，標記預設選中的顏色按鈕
+window.addEventListener('load', function() {
+    const currentColor = document.getElementById('highlightTextColor').value.toUpperCase();
+    const matchingBtn = document.querySelector(`.color-preset-btn[data-color="${currentColor}"]`);
+
+    if (matchingBtn) {
+        matchingBtn.classList.add('selected');
+    } else {
+        // 如果不是預設顏色，標記「自訂」為選中
+        document.getElementById('customColorBtn').classList.add('selected');
+    }
+});
 

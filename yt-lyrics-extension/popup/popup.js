@@ -194,9 +194,20 @@
         // 字體大小
         elements.fontSizeSlider.addEventListener('input', handleFontSizeChange);
 
-        // 顏色選擇
-        elements.highlightColor.addEventListener('input', handleSettingChange);
-        elements.shadowColor.addEventListener('input', handleSettingChange);
+        // 顏色選擇（加入 debounce）
+        let colorUpdateTimeout = null;
+
+        const debouncedHandleSettingChange = () => {
+            if (colorUpdateTimeout) {
+                clearTimeout(colorUpdateTimeout);
+            }
+            colorUpdateTimeout = setTimeout(() => {
+                handleSettingChange();
+            }, 300);
+        };
+
+        elements.highlightColor.addEventListener('input', debouncedHandleSettingChange);
+        elements.shadowColor.addEventListener('input', debouncedHandleSettingChange);
 
         // 時間偏移
         elements.timeOffset.addEventListener('input', handleTimeOffsetChange);
@@ -492,4 +503,53 @@
 
     // 初始化
     init();
+
+    // 🎨 預設顏色按鈕點擊事件
+    document.querySelectorAll('.color-preset-btn:not(.color-custom-btn)').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const selectedColor = this.getAttribute('data-color');
+
+            // 更新隱藏的 color picker 值
+            elements.highlightColor.value = selectedColor;
+
+            // 移除所有按鈕的選中狀態
+            document.querySelectorAll('.color-preset-btn').forEach(b => b.classList.remove('selected'));
+
+            // 標記當前按鈕為選中
+            this.classList.add('selected');
+
+            // 立即套用顏色（不使用 debounce）
+            handleSettingChange();
+        });
+    });
+
+    // 🎨 自訂顏色按鈕點擊事件
+    document.getElementById('customColorBtn').addEventListener('click', function() {
+        // 觸發隱藏的 color picker
+        const colorPicker = elements.highlightColor;
+        colorPicker.click();
+
+        // 監聽 color picker 的變更
+        colorPicker.addEventListener('change', function() {
+            // 移除所有預設按鈕的選中狀態
+            document.querySelectorAll('.color-preset-btn').forEach(b => b.classList.remove('selected'));
+
+            // 標記「自訂」按鈕為選中
+            document.getElementById('customColorBtn').classList.add('selected');
+
+            // 立即套用顏色
+            handleSettingChange();
+        }, { once: true });
+    });
+
+    // 🎨 頁面載入時，標記預設選中的顏色按鈕
+    const currentColor = elements.highlightColor.value.toUpperCase();
+    const matchingBtn = document.querySelector(`.color-preset-btn[data-color="${currentColor}"]`);
+
+    if (matchingBtn) {
+        matchingBtn.classList.add('selected');
+    } else {
+        // 如果不是預設顏色，標記「自訂」為選中
+        document.getElementById('customColorBtn').classList.add('selected');
+    }
 })();

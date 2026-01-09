@@ -72,15 +72,31 @@
             <div class="setting-row">
                 <label for="fontSizeSlider">大小</label>
                 <div class="slider-wrapper">
-                    <input type="range" id="fontSizeSlider" min="20" max="80" value="40">
+                    <input type="range" id="fontSizeSlider" min="20" max="120" value="40">
                     <span id="fontSizeValue">40px</span>
                 </div>
             </div>
 
             <!-- 高亮顏色 -->
             <div class="setting-row">
-                <label for="highlightColor">高亮顏色</label>
-                <input type="color" id="highlightColor" value="#80D9E5">
+                <label>高亮顏色</label>
+                <div class="color-preset-grid">
+                    <button class="color-preset-btn" data-color="#80D9E5" style="background-color: #80D9E5;" title="淺藍綠"></button>
+                    <button class="color-preset-btn" data-color="#FF6B9D" style="background-color: #FF6B9D;" title="粉紅"></button>
+                    <button class="color-preset-btn" data-color="#FFD700" style="background-color: #FFD700;" title="金黃"></button>
+                    <button class="color-preset-btn" data-color="#98FB98" style="background-color: #98FB98;" title="淺綠"></button>
+                    <button class="color-preset-btn" data-color="#DA70D6" style="background-color: #DA70D6;" title="紫色"></button>
+                    <button class="color-preset-btn" data-color="#FFA500" style="background-color: #FFA500;" title="橘色"></button>
+                    <button class="color-preset-btn" data-color="#87CEEB" style="background-color: #87CEEB;" title="天藍"></button>
+                    <button class="color-preset-btn" data-color="#FFFACD" style="background-color: #FFFACD;" title="檸檬黃"></button>
+                    <button class="color-preset-btn" data-color="#98FF98" style="background-color: #98FF98;" title="薄荷綠"></button>
+                    <button class="color-preset-btn" data-color="#FF7F50" style="background-color: #FF7F50;" title="珊瑚紅"></button>
+                    <button class="color-preset-btn color-custom-btn" id="customColorBtn" title="自訂顏色">
+                        <span>+</span>
+                    </button>
+                </div>
+                <!-- 隱藏的 color picker -->
+                <input type="color" id="highlightColor" value="#80D9E5" style="display: none;">
             </div>
 
             <!-- 陰影顏色 -->
