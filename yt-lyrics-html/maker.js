@@ -1,6 +1,8 @@
 
 // 載入影片
 let player;
+let currentVideoId = null; // 追蹤當前載入的影片ID
+
 function loadVideo() {
     let url = document.getElementById("videoUrl").value;
     let videoId = extractVideoId(url);
@@ -10,14 +12,33 @@ function loadVideo() {
         return;
     }
 
+    // 如果已經有載入過影片且有時間戳記錄，警告使用者
+    if (currentVideoId && currentVideoId !== videoId && timestamps.length > 0) {
+        const confirmMessage = "載入新影片將會清除目前的歌詞和時間紀錄！\n\n" +
+                             "請確認：\n" +
+                             "• 如果還沒下載，請先點擊「下載時間紀錄」\n" +
+                             "• 點擊「確定」將清除所有紀錄並載入新影片\n" +
+                             "• 點擊「取消」保留目前紀錄";
+
+        if (!confirm(confirmMessage)) {
+            return; // 使用者取消，不載入新影片
+        }
+
+        // 使用者確認，清除所有紀錄
+        clearAllRecords();
+    }
+
+    // 更新當前影片ID
+    currentVideoId = videoId;
+
     // 若player已存在，先銷毀再重新載入
     if (player) {
         player.destroy();
     }
 
     player = new YT.Player('player', {
-        height: '315',
-        width: '560',
+        height: '480',
+        width: '854',
         videoId: videoId,
         playerVars: { 'autoplay': 1, 'controls': 1 },
         events: {
@@ -25,6 +46,23 @@ function loadVideo() {
             'onStateChange': onPlayerStateChange
         }
     });
+}
+
+// 清除所有紀錄的輔助函數
+function clearAllRecords() {
+    currentLineIndex = 0;
+    currentWordIndex = 0;
+    timestamps = [];
+    lyrics = [];
+    totalWordsInSong = 0;
+
+    // 清空歌詞輸入框
+    document.getElementById('lyricsInput').value = '';
+
+    // 更新 UI
+    displayLyrics();
+    updateTimestampsDisplay();
+    updateProgressBar();
 }
 
 // 擷取影片ID
