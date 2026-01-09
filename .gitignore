@@ -1,0 +1,39 @@
+# Node modules
+node_modules/
+package-lock.json
+
+# Test coverage
+coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup files
+*-backup/
+fonts-backup/
+*.backup
+
+# Compressed archives
+*.tar.gz
+*.zip
+*.rar
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+.temp/
+tmp/
+
+# Environment files
+.env
+.env.local

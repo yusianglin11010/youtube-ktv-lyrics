@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube KTV Lyrics</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <!-- 標題區 -->
+        <header class="header">
+            <h1>🎤 KTV 歌詞</h1>
+            <div class="toggle-wrapper">
+                <label class="toggle">
+                    <input type="checkbox" id="enableToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </header>
+
+        <!-- 狀態區 -->
+        <section class="status-section">
+            <div id="statusMessage" class="status-message">
+                <span class="status-icon">⏳</span>
+                <span class="status-text">檢查中...</span>
+            </div>
+            <div id="videoInfo" class="video-info hidden">
+                <div class="video-title" id="videoTitle"></div>
+            </div>
+        </section>
+
+        <!-- 上傳區 -->
+        <section class="upload-section">
+            <label class="upload-btn" for="subtitleFile">
+                <span class="upload-icon">📁</span>
+                <span>上傳字幕檔案</span>
+            </label>
+            <input type="file" id="subtitleFile" accept=".txt" hidden>
+            <div id="uploadStatus" class="upload-status hidden"></div>
+        </section>
+
+        <!-- 設定區 -->
+        <section class="settings-section">
+            <h2>顯示設定</h2>
+
+            <!-- 字型選擇 -->
+            <div class="setting-row">
+                <label for="fontSelector">字型</label>
+                <select id="fontSelector">
+                    <option value="NotoSans">Noto Sans（預設）</option>
+                    <optgroup label="繁體中文">
+                        <option value="Huninn">粉圓體</option>
+                        <option value="ChenYuluoyan">辰宇落雁體</option>
+                        <option value="ChiayiCityFont">嘉市體</option>
+                    </optgroup>
+                    <optgroup label="日文">
+                        <option value="ZenKakuGothicNew">Zen 角ゴシック</option>
+                        <option value="MPLUS1">M PLUS 1</option>
+                        <option value="KiwiMaru">Kiwi Maru</option>
+                    </optgroup>
+                    <optgroup label="韓文">
+                        <option value="NanumGothic">Nanum Gothic</option>
+                        <option value="NanumBrushScript">Nanum Brush Script</option>
+                        <option value="DoHyeon">Do Hyeon</option>
+                        <option value="Sunflower">Sunflower</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <!-- 字體大小 -->
+            <div class="setting-row">
+                <label for="fontSizeSlider">大小</label>
+                <div class="slider-wrapper">
+                    <input type="range" id="fontSizeSlider" min="20" max="80" value="40">
+                    <span id="fontSizeValue">40px</span>
+                </div>
+            </div>
+
+            <!-- 高亮顏色 -->
+            <div class="setting-row">
+                <label for="highlightColor">高亮顏色</label>
+                <input type="color" id="highlightColor" value="#80D9E5">
+            </div>
+
+            <!-- 陰影顏色 -->
+            <div class="setting-row">
+                <label for="shadowColor">陰影顏色</label>
+                <input type="color" id="shadowColor" value="#1D1B1B">
+            </div>
+
+            <!-- 時間偏移 -->
+            <div class="setting-row">
+                <label for="timeOffset">時間偏移</label>
+                <div class="slider-wrapper">
+                    <input type="range" id="timeOffset" min="-100" max="100" value="0" step="5">
+                    <span id="timeOffsetValue">0.00s</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 底部連結 -->
+        <footer class="footer">
+            <a href="#" id="openOptions">管理歌詞庫</a>
+        </footer>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

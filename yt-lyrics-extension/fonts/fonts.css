@@ -1,0 +1,57 @@
+/**
+ * YouTube KTV Lyrics Extension - Font Definitions
+ * 字型定義 (精選 10 種常用字型)
+ */
+
+/* 繁體中文 */
+@font-face {
+    font-family: 'Huninn';
+    src: url('jf-openhuninn-1.0.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'ChenYuluoyan';
+    src: url('ChenYuluoyan-Thin.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'ChiayiCityFont';
+    src: url('ChiayiCity.ttf') format('truetype');
+}
+
+/* 日文 */
+@font-face {
+    font-family: 'ZenKakuGothicNew';
+    src: url('ZenKakuGothicNew-Black.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'MPLUS1';
+    src: url('MPLUS1p-Bold.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'KiwiMaru';
+    src: url('KiwiMaru-Medium.ttf') format('truetype');
+}
+
+/* 韓文 */
+@font-face {
+    font-family: 'NanumGothic';
+    src: url('NanumGothic-Bold.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'NanumBrushScript';
+    src: url('NanumBrushScript-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'DoHyeon';
+    src: url('DoHyeon-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Sunflower';
+    src: url('Sunflower-Bold.ttf') format('truetype');
+}

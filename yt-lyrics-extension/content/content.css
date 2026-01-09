@@ -1,0 +1,153 @@
+/**
+ * YouTube KTV Lyrics Extension - Content Styles
+ * 歌詞覆蓋層樣式
+ */
+
+/* ===== 主容器 ===== */
+#yt-ktv-lyrics-container {
+    position: absolute;
+    bottom: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    z-index: 2147483647; /* 最大 z-index，確保顯示在最上層 */
+    pointer-events: none;
+    text-align: center;
+}
+
+/* 全螢幕模式 */
+#yt-ktv-lyrics-container.yt-ktv-fullscreen {
+    position: fixed;
+    bottom: 8%;
+}
+
+/* ===== 顯示區域 ===== */
+#yt-ktv-lyrics-display {
+    font-family: 'Noto Sans TC', 'Noto Sans SC', 'Noto Sans JP', 'Noto Sans KR', sans-serif;
+    font-size: 40px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 5px black;
+    white-space: nowrap;
+}
+
+/* ===== 字幕行 ===== */
+.yt-ktv-line {
+    display: block;
+    text-align: center;
+    font-size: inherit;
+    font-weight: bold;
+    margin: 5px 0;
+    transition: font-size 0.2s ease-in-out;
+}
+
+/* ===== 單字容器 ===== */
+.yt-ktv-word {
+    position: relative;
+    display: inline-block;
+    white-space: nowrap;
+    font-size: inherit;
+    font-weight: bold;
+    margin-right: 1px;
+    transition: font-size 0.2s ease-in-out;
+}
+
+/* ===== 底層文字（白字黑陰影）===== */
+.yt-ktv-base-text {
+    color: white;
+    text-shadow:
+        2px 2px 5px rgb(37, 36, 45),
+        -1px -1px 3px rgba(0, 0, 0, 0.8),
+        1px -1px 3px rgba(0, 0, 0, 0.8),
+        -1px 1px 3px rgba(0, 0, 0, 0.8),
+        1px 1px 3px rgba(0, 0, 0, 0.8);
+    font-size: inherit;
+    transition: font-size 0.2s ease-in-out;
+}
+
+/* ===== 高亮層文字（動畫）===== */
+.yt-ktv-highlight-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.05s linear, color 0.3s, text-shadow 0.3s, font-size 0.2s ease-in-out;
+    font-size: inherit;
+}
+
+/* ===== 響應式設計 ===== */
+
+/* 劇院模式調整 */
+ytd-watch-flexy[theater] #yt-ktv-lyrics-container {
+    bottom: 10%;
+}
+
+/* 迷你播放器隱藏字幕 */
+ytd-watch-flexy[mini-player] #yt-ktv-lyrics-container {
+    display: none;
+}
+
+/* ===== 動畫效果 ===== */
+
+/* 淡入效果 */
+@keyframes yt-ktv-fade-in {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+#yt-ktv-lyrics-container {
+    animation: yt-ktv-fade-in 0.3s ease-out;
+}
+
+/* ===== 字型載入 ===== */
+
+/*
+ * 字型透過 web_accessible_resources 載入
+ * 實際 @font-face 定義在 fonts/fonts.css
+ */
+
+/* ===== 廣告播放時隱藏 ===== */
+.ad-showing #yt-ktv-lyrics-container,
+.ytp-ad-player-overlay ~ #yt-ktv-lyrics-container {
+    display: none !important;
+}
+
+/* ===== 確保在 YouTube 播放器內正確顯示 ===== */
+
+#movie_player #yt-ktv-lyrics-container {
+    position: absolute;
+}
+
+/* YouTube 全螢幕時的特殊處理 */
+#movie_player.ytp-fullscreen #yt-ktv-lyrics-container,
+.html5-video-player.ytp-fullscreen #yt-ktv-lyrics-container {
+    position: fixed;
+    z-index: 2147483647;
+}
+
+/* ===== 防止被 YouTube 樣式覆蓋 ===== */
+#yt-ktv-lyrics-container,
+#yt-ktv-lyrics-container * {
+    box-sizing: border-box;
+    line-height: 1.3;
+}
+
+#yt-ktv-lyrics-display,
+.yt-ktv-line,
+.yt-ktv-word,
+.yt-ktv-base-text,
+.yt-ktv-highlight-text {
+    font-family: inherit;
+    font-weight: bold;
+    letter-spacing: 0;
+    text-transform: none;
+    text-decoration: none;
+}

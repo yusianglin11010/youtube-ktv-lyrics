@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>歌詞庫管理 - YouTube KTV Lyrics</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 標題區 -->
+        <header class="header">
+            <h1>🎤 歌詞庫管理</h1>
+            <p class="subtitle">管理已儲存的 KTV 歌詞字幕</p>
+        </header>
+
+        <!-- 統計區 -->
+        <section class="stats-section">
+            <div class="stat-card">
+                <span class="stat-value" id="subtitleCount">0</span>
+                <span class="stat-label">首歌曲</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="storageUsed">0 KB</span>
+                <span class="stat-label">已使用空間</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value" id="storagePercentage">0%</span>
+                <span class="stat-label">容量使用率</span>
+            </div>
+        </section>
+
+        <!-- 搜尋與操作區 -->
+        <section class="toolbar">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜尋歌曲標題或影片 ID...">
+                <button id="clearSearch" class="btn-icon" title="清除搜尋">✕</button>
+            </div>
+            <div class="toolbar-actions">
+                <button id="deleteSelected" class="btn btn-danger" disabled>
+                    刪除所選 (<span id="selectedCount">0</span>)
+                </button>
+                <button id="deleteAll" class="btn btn-danger-outline">
+                    清空全部
+                </button>
+            </div>
+        </section>
+
+        <!-- 歌曲列表 -->
+        <section class="list-section">
+            <table class="subtitle-table">
+                <thead>
+                    <tr>
+                        <th class="col-checkbox">
+                            <input type="checkbox" id="selectAll">
+                        </th>
+                        <th class="col-title">歌曲標題</th>
+                        <th class="col-videoid">影片 ID</th>
+                        <th class="col-date">上傳日期</th>
+                        <th class="col-actions">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="subtitleList">
+                    <!-- 動態填充 -->
+                </tbody>
+            </table>
+
+            <!-- 空狀態 -->
+            <div id="emptyState" class="empty-state hidden">
+                <div class="empty-icon">📭</div>
+                <p>尚未儲存任何歌詞</p>
+                <p class="empty-hint">在 YouTube 影片頁面點擊擴充功能圖示上傳字幕檔案</p>
+            </div>
+
+            <!-- 無搜尋結果 -->
+            <div id="noResults" class="empty-state hidden">
+                <div class="empty-icon">🔍</div>
+                <p>找不到符合的結果</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- 確認對話框 -->
+    <div id="confirmDialog" class="dialog-overlay hidden">
+        <div class="dialog">
+            <h2 id="dialogTitle">確認刪除</h2>
+            <p id="dialogMessage">確定要刪除選取的歌曲嗎？此操作無法復原。</p>
+            <div class="dialog-actions">
+                <button id="dialogCancel" class="btn btn-secondary">取消</button>
+                <button id="dialogConfirm" class="btn btn-danger">刪除</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+</html>

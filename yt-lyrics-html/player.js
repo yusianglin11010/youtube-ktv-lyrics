@@ -104,8 +104,23 @@ document.getElementById("subtitleOffset").addEventListener("input", function () 
 function onYouTubeIframeAPIReady() {
     if (!player) { // 只有當 player 尚未初始化時才建立新播放器
         player = new YT.Player('player', {
+            height: '480',
+            width: '854',
+            playerVars: {
+                'autoplay': 0,
+                'controls': 1,
+                'rel': 0,
+                'modestbranding': 1,
+                'playsinline': 1,
+                'origin': window.location.origin,
+                'enablejsapi': 1
+            },
             events: {
-                'onReady': startSyncTimer // 影片載入完成後，啟動計時器
+                'onReady': startSyncTimer, // 影片載入完成後，啟動計時器
+                'onError': function(event) {
+                    console.error('YouTube Player Error:', event.data);
+                    alert('YouTube 影片載入失敗！錯誤代碼: ' + event.data + '\n\n可能原因：\n1. 影片不允許嵌入\n2. 影片已被刪除\n3. 網路連線問題\n4. 使用 file:// 協議（請使用 http://localhost）');
+                }
             }
         });
     }

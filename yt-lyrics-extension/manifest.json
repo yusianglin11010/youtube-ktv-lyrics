@@ -1,0 +1,50 @@
+{
+    "manifest_version": 3,
+    "name": "YouTube KTV Lyrics",
+    "version": "1.0.0",
+    "description": "在 YouTube 影片上顯示 KTV 風格的歌詞字幕",
+    "permissions": [
+        "storage",
+        "activeTab"
+    ],
+    "host_permissions": [
+        "*://www.youtube.com/*"
+    ],
+    "background": {
+        "service_worker": "background/service-worker.js"
+    },
+    "content_scripts": [
+        {
+            "matches": ["*://www.youtube.com/*"],
+            "js": [
+                "lib/subtitle-parser.js",
+                "lib/storage.js",
+                "content/youtube-detector.js",
+                "content/lyrics-overlay.js",
+                "content/content.js"
+            ],
+            "css": ["content/content.css"],
+            "run_at": "document_end"
+        }
+    ],
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "options_page": "options/options.html",
+    "web_accessible_resources": [
+        {
+            "resources": ["fonts/*"],
+            "matches": ["*://www.youtube.com/*"]
+        }
+    ],
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    }
+}
