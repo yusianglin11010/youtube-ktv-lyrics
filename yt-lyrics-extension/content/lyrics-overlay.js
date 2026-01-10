@@ -16,6 +16,7 @@ const LyricsOverlay = (function() {
     let animationFrameId = null;
     let isEnabled = true;
     let getTimeFn = null;
+    let activeTimeouts = new Set(); // 追蹤所有活動的 setTimeout
 
     // 設定
     let settings = {
@@ -64,10 +65,13 @@ const LyricsOverlay = (function() {
      */
     function setSubtitleData(data) {
         subtitleData = data || [];
-        // 重置行索引
+        // 重置行索引和快取
         currentOddLineIndex = 1;
         currentEvenLineIndex = 2;
         lastUpdateTime = 0;
+        cachedUpperLineIndex = -1;
+        cachedLowerLineIndex = -1;
+        wordElements = [];
 
         if (displayArea) {
             displayArea.innerHTML = '';
@@ -110,132 +114,36 @@ const LyricsOverlay = (function() {
     }
 
     /**
-     * 建立單字 span 元素
-     * @param {object} entry - 字幕條目
-     * @param {number} currentTime - 當前時間
-     * @returns {HTMLElement}
+     * 清除所有活動的計時器
      */
-    function createWordSpan(entry, currentTime) {
-        const wordSpan = document.createElement('span');
-        wordSpan.classList.add('yt-ktv-word');
-
-        // 主容器
-        const mainTextWrapper = document.createElement('span');
-        mainTextWrapper.classList.add('yt-ktv-main-text-wrapper');
-        mainTextWrapper.style.position = 'relative';
-        mainTextWrapper.style.display = 'inline-flex';
-
-        // === 底層 stacked（拼音 + 主字）===
-        const stacked = document.createElement('span');
-        stacked.classList.add('yt-ktv-stacked');
-        stacked.style.display = 'inline-flex';
-        stacked.style.flexDirection = 'column';
-        stacked.style.alignItems = 'center';
-        stacked.style.marginRight = '4px';
-        stacked.style.position = 'relative';
-        stacked.style.verticalAlign = 'bottom';
-
-        // 拼音底層（如果有）
-        if (entry.pinyin) {
-            const pronunciationBase = document.createElement('span');
-            pronunciationBase.classList.add('yt-ktv-pronunciation');
-            pronunciationBase.style.fontSize = (settings.fontSize * 0.4) + 'px';
-            pronunciationBase.style.lineHeight = '1.2';
-            pronunciationBase.style.color = 'rgba(255, 255, 255, 0.8)';
-            pronunciationBase.style.whiteSpace = 'nowrap';
-            pronunciationBase.style.textShadow = '1px 1px 3px rgba(0, 0, 0, 0.8)';
-            pronunciationBase.textContent = entry.pinyin;
-            stacked.appendChild(pronunciationBase);
-        }
-
-        // 主字底層
-        const baseText = document.createElement('span');
-        baseText.classList.add('yt-ktv-base-text');
-        baseText.style.fontSize = settings.fontSize + 'px';
-        baseText.style.lineHeight = '1';
-        baseText.innerHTML = entry.word
-            .replace(/␣␣/g, '&nbsp;&nbsp;')
-            .replace(/␣/g, '&nbsp;');
-        stacked.appendChild(baseText);
-
-        mainTextWrapper.appendChild(stacked);
-
-        // === 高亮層 wrapper（absolute 覆蓋）===
-        const highlightWrapper = document.createElement('span');
-        highlightWrapper.classList.add('yt-ktv-highlight-wrapper');
-        highlightWrapper.style.display = 'flex';
-        highlightWrapper.style.flexDirection = 'column';
-        highlightWrapper.style.alignItems = 'center';
-        highlightWrapper.style.position = 'absolute';
-        highlightWrapper.style.top = '0';
-        highlightWrapper.style.left = '0';
-        highlightWrapper.style.width = '100%';
-
-        let pinyinHighlight = null;
-
-        // 拼音高亮層（如果有）
-        if (entry.pinyin) {
-            pinyinHighlight = document.createElement('span');
-            pinyinHighlight.classList.add('yt-ktv-pronunciation', 'highlight');
-            pinyinHighlight.style.fontSize = (settings.fontSize * 0.4) + 'px';
-            pinyinHighlight.style.lineHeight = '1.2';
-            pinyinHighlight.style.whiteSpace = 'nowrap';
-            pinyinHighlight.style.overflow = 'hidden';
-            pinyinHighlight.style.clipPath = 'inset(0 100% 0 0)';
-            pinyinHighlight.textContent = entry.pinyin;
-            highlightWrapper.appendChild(pinyinHighlight);
-        }
-
-        // 主字高亮層
-        const highlightText = document.createElement('span');
-        highlightText.classList.add('yt-ktv-highlight-text');
-        highlightText.style.fontSize = settings.fontSize + 'px';
-        highlightText.style.lineHeight = '1';
-        highlightText.style.clipPath = 'inset(0 100% 0 0)';
-        highlightText.innerHTML = entry.word
-            .replace(/␣␣/g, '&nbsp;&nbsp;')
-            .replace(/␣/g, '&nbsp;');
-        highlightWrapper.appendChild(highlightText);
-
-        mainTextWrapper.appendChild(highlightWrapper);
-        wordSpan.appendChild(mainTextWrapper);
-
-        // 啟動動畫（主字幕和拼音同步）
-        animateWordHighlight(entry, highlightText, currentTime);
-        if (pinyinHighlight) {
-            animateWordHighlight(entry, pinyinHighlight, currentTime);
-        }
-
-        return wordSpan;
+    function clearAllTimeouts() {
+        activeTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+        activeTimeouts.clear();
     }
 
     /**
-     * 單字高亮動畫
+     * 單字高亮動畫（單次更新，不遞迴）
+     * 使用 background-position 控制漸層進度，實現 KTV 風格的文字填充效果
      * @param {object} entry - 字幕條目
-     * @param {HTMLElement} highlightText - 高亮層元素
+     * @param {HTMLElement} textEl - 文字元素
      * @param {number} currentTime - 當前時間
      */
-    function animateWordHighlight(entry, highlightText, currentTime) {
+    function animateWordHighlight(entry, textEl, currentTime) {
         const totalDuration = entry.endTime - entry.startTime;
         const elapsedTime = Math.max(0, currentTime - entry.startTime);
         const progress = Math.min(1, elapsedTime / totalDuration);
 
-        // 套用 clip-path 動畫（由左至右）
-        highlightText.style.clipPath = `inset(0 ${100 - progress * 100}% 0 0)`;
-        highlightText.style.color = settings.highlightColor;
-        highlightText.style.textShadow = `2px 2px 5px ${settings.shadowColor}`;
-
-        // 如果動畫尚未完成，繼續更新
-        if (progress < 1 && isEnabled && getTimeFn) {
-            setTimeout(() => {
-                requestAnimationFrame(() => {
-                    if (highlightText.isConnected) {
-                        animateWordHighlight(entry, highlightText, getTimeFn());
-                    }
-                });
-            }, 20); // 每 20ms 更新一次
-        }
+        // 使用 background-position 控制漸層
+        // 100% = 未開始 (顯示白色)
+        // 0% = 完成 (顯示高亮色)
+        const bgPosition = (1 - progress) * 100;
+        textEl.style.backgroundPosition = `${bgPosition}% 0`;
     }
+
+    // 快取目前顯示的行索引，用於判斷是否需要重建 DOM
+    let cachedUpperLineIndex = -1;
+    let cachedLowerLineIndex = -1;
+    let wordElements = []; // 儲存 {entry, highlightText, pinyinHighlight} 的陣列
 
     /**
      * 更新歌詞顯示
@@ -249,30 +157,8 @@ const LyricsOverlay = (function() {
         // 套用時間偏移
         const adjustedTime = currentTime + settings.timeOffset;
 
-        // 清空顯示區域
-        displayArea.innerHTML = '';
-
         // 獲取字幕的最大行數
         const maxLine = Math.max(...subtitleData.map(entry => entry.line));
-
-        // 找到當前時間對應的行數
-        const activeLines = new Set();
-        let minFutureEntry = null;
-
-        subtitleData.forEach(entry => {
-            if (adjustedTime >= entry.startTime && adjustedTime <= entry.endTime) {
-                activeLines.add(entry.line);
-            }
-            if (entry.startTime >= adjustedTime &&
-                (minFutureEntry === null || entry.startTime < minFutureEntry.startTime)) {
-                minFutureEntry = entry;
-            }
-        });
-
-        // 若當前時間未匹配任何行，則使用最接近的未來字幕行
-        if (activeLines.size === 0 && minFutureEntry) {
-            activeLines.add(minFutureEntry.line);
-        }
 
         // 判斷是否發生快進快退（時間跳躍超過 0.5 秒）
         if (Math.abs(adjustedTime - lastUpdateTime) > 0.5) {
@@ -293,28 +179,53 @@ const LyricsOverlay = (function() {
         const upperLyrics = subtitleData.filter(entry => entry.line === currentOddLineIndex);
         const lowerLyrics = subtitleData.filter(entry => entry.line === currentEvenLineIndex);
 
-        // 建立上方行 div
-        const upperLineDiv = document.createElement('div');
-        upperLineDiv.classList.add('yt-ktv-line');
-        upperLineDiv.style.fontSize = settings.fontSize + 'px';
+        // 檢查是否需要換行（重建 DOM）
+        const needsRebuild = (cachedUpperLineIndex !== currentOddLineIndex) ||
+                            (cachedLowerLineIndex !== currentEvenLineIndex);
 
-        // 建立下方行 div
-        const lowerLineDiv = document.createElement('div');
-        lowerLineDiv.classList.add('yt-ktv-line');
-        lowerLineDiv.style.fontSize = settings.fontSize + 'px';
+        if (needsRebuild) {
+            // 重建 DOM
+            displayArea.innerHTML = '';
+            wordElements = [];
 
-        // 填充上方行
-        upperLyrics.forEach(entry => {
-            upperLineDiv.appendChild(createWordSpan(entry, adjustedTime));
-        });
+            // 建立上方行 div
+            const upperLineDiv = document.createElement('div');
+            upperLineDiv.classList.add('yt-ktv-line');
+            upperLineDiv.style.fontSize = settings.fontSize + 'px';
 
-        // 填充下方行
-        lowerLyrics.forEach(entry => {
-            lowerLineDiv.appendChild(createWordSpan(entry, adjustedTime));
-        });
+            // 建立下方行 div
+            const lowerLineDiv = document.createElement('div');
+            lowerLineDiv.classList.add('yt-ktv-line');
+            lowerLineDiv.style.fontSize = settings.fontSize + 'px';
 
-        displayArea.appendChild(upperLineDiv);
-        displayArea.appendChild(lowerLineDiv);
+            // 填充上方行
+            upperLyrics.forEach(entry => {
+                const wordData = createWordSpanWithRefs(entry, adjustedTime);
+                upperLineDiv.appendChild(wordData.element);
+                wordElements.push(wordData);
+            });
+
+            // 填充下方行
+            lowerLyrics.forEach(entry => {
+                const wordData = createWordSpanWithRefs(entry, adjustedTime);
+                lowerLineDiv.appendChild(wordData.element);
+                wordElements.push(wordData);
+            });
+
+            displayArea.appendChild(upperLineDiv);
+            displayArea.appendChild(lowerLineDiv);
+
+            cachedUpperLineIndex = currentOddLineIndex;
+            cachedLowerLineIndex = currentEvenLineIndex;
+        } else {
+            // 只更新 background-position，不重建 DOM
+            wordElements.forEach(({ entry, textEl, pinyinEl }) => {
+                animateWordHighlight(entry, textEl, adjustedTime);
+                if (pinyinEl) {
+                    animateWordHighlight(entry, pinyinEl, adjustedTime);
+                }
+            });
+        }
 
         // 字幕換行條件
         if (upperLyrics.length > 0 &&
@@ -328,6 +239,83 @@ const LyricsOverlay = (function() {
             maxLine >= currentEvenLineIndex + 2) {
             currentEvenLineIndex += 2;
         }
+    }
+
+    /**
+     * 建立單字 span 元素並返回引用（用於後續更新）
+     * 使用單層漸層方案：只有一個文字元素，使用 background-clip: text + linear-gradient 實現 KTV 高亮效果
+     * 這種方法完全避免了兩層對齊的問題
+     * @param {object} entry - 字幕條目
+     * @param {number} currentTime - 當前時間
+     * @returns {{element: HTMLElement, entry: object, textEl: HTMLElement, pinyinEl: HTMLElement|null}}
+     */
+    function createWordSpanWithRefs(entry, currentTime) {
+        const wordSpan = document.createElement('span');
+        wordSpan.classList.add('yt-ktv-word');
+        wordSpan.style.display = 'inline-block';
+        wordSpan.style.marginRight = '4px';
+        wordSpan.style.verticalAlign = 'bottom';
+
+        // 內容容器
+        const content = document.createElement('span');
+        content.classList.add('yt-ktv-content');
+        content.style.display = 'flex';
+        content.style.flexDirection = 'column';
+        content.style.alignItems = 'flex-start';
+
+        let pinyinEl = null;
+
+        // 拼音（使用單層漸層）
+        if (entry.pinyin) {
+            pinyinEl = document.createElement('span');
+            pinyinEl.classList.add('yt-ktv-pronunciation');
+            pinyinEl.style.fontSize = (settings.fontSize * 0.4) + 'px';
+            pinyinEl.style.lineHeight = '1.2';
+            pinyinEl.style.whiteSpace = 'nowrap';
+            // 漸層背景：左邊高亮色，右邊白色（透明度0.8）
+            pinyinEl.style.background = `linear-gradient(90deg, ${settings.highlightColor} 0%, ${settings.highlightColor} 50%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0.8) 100%)`;
+            pinyinEl.style.backgroundSize = '200% 100%';
+            pinyinEl.style.backgroundPosition = '100% 0'; // 初始顯示白色
+            pinyinEl.style.webkitBackgroundClip = 'text';
+            pinyinEl.style.backgroundClip = 'text';
+            pinyinEl.style.webkitTextFillColor = 'transparent';
+            pinyinEl.style.color = 'transparent';
+            pinyinEl.textContent = entry.pinyin;
+            content.appendChild(pinyinEl);
+        }
+
+        // 主字（使用單層漸層）
+        const textEl = document.createElement('span');
+        textEl.classList.add('yt-ktv-main-text');
+        textEl.style.fontSize = settings.fontSize + 'px';
+        textEl.style.lineHeight = '1';
+        // 漸層背景：左邊高亮色，右邊白色
+        textEl.style.background = `linear-gradient(90deg, ${settings.highlightColor} 0%, ${settings.highlightColor} 50%, white 50%, white 100%)`;
+        textEl.style.backgroundSize = '200% 100%';
+        textEl.style.backgroundPosition = '100% 0'; // 初始顯示白色
+        textEl.style.webkitBackgroundClip = 'text';
+        textEl.style.backgroundClip = 'text';
+        textEl.style.webkitTextFillColor = 'transparent';
+        textEl.style.color = 'transparent';
+        textEl.innerHTML = entry.word
+            .replace(/␣␣/g, '&nbsp;&nbsp;')
+            .replace(/␣/g, '&nbsp;');
+        content.appendChild(textEl);
+
+        wordSpan.appendChild(content);
+
+        // 初始動畫狀態
+        animateWordHighlight(entry, textEl, currentTime);
+        if (pinyinEl) {
+            animateWordHighlight(entry, pinyinEl, currentTime);
+        }
+
+        return {
+            element: wordSpan,
+            entry: entry,
+            textEl: textEl,
+            pinyinEl: pinyinEl
+        };
     }
 
     /**
@@ -412,6 +400,10 @@ const LyricsOverlay = (function() {
         currentOddLineIndex = 1;
         currentEvenLineIndex = 2;
         lastUpdateTime = 0;
+        cachedUpperLineIndex = -1;
+        cachedLowerLineIndex = -1;
+        wordElements = [];
+        clearAllTimeouts();
 
         if (displayArea) {
             displayArea.innerHTML = '';
@@ -423,6 +415,7 @@ const LyricsOverlay = (function() {
      */
     function destroy() {
         stopAnimationLoop();
+        clearAllTimeouts();
 
         if (container) {
             container.remove();
@@ -431,6 +424,9 @@ const LyricsOverlay = (function() {
         }
 
         subtitleData = [];
+        wordElements = [];
+        cachedUpperLineIndex = -1;
+        cachedLowerLineIndex = -1;
         getTimeFn = null;
     }
 

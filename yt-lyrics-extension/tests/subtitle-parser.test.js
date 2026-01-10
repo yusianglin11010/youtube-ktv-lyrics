@@ -89,8 +89,39 @@ describe('SubtitleParser', () => {
                 wordIndex: 1,
                 startTime: 5.23,
                 endTime: 5.50,
-                word: '昨'
+                word: '昨',
+                pinyin: null
             });
+        });
+
+        test('should parse a subtitle line with pinyin', () => {
+            const line = 'Line 1 | Word 1 | 00:27:11 → 00:27:58 | 미 | mi';
+            const result = SubtitleParser.parseSubtitleLine(line);
+
+            expect(result).toEqual({
+                line: 1,
+                wordIndex: 1,
+                startTime: 27.11,
+                endTime: 27.58,
+                word: '미',
+                pinyin: 'mi'
+            });
+        });
+
+        test('should parse pinyin with trailing space', () => {
+            const line = 'Line 1 | Word 2 | 00:27:58 → 00:28:19 | 치 | chi ';
+            const result = SubtitleParser.parseSubtitleLine(line);
+
+            expect(result.word).toBe('치');
+            expect(result.pinyin).toBe('chi');
+        });
+
+        test('should parse pinyin for English words', () => {
+            const line = 'Line 8 | Word 4 | 01:09:55 → 01:10:55 | drowning | drowning';
+            const result = SubtitleParser.parseSubtitleLine(line);
+
+            expect(result.word).toBe('drowning');
+            expect(result.pinyin).toBe('drowning');
         });
 
         test('should parse line with spaces and convert to markers', () => {
@@ -151,8 +182,31 @@ Line 2 | Word 2 | 00:03:50 → 00:04:20 | 界`;
                 wordIndex: 1,
                 startTime: 1.0,
                 endTime: 1.5,
-                word: '你'
+                word: '你',
+                pinyin: null
             });
+        });
+
+        test('should detect #PINYIN_ENABLED marker', () => {
+            const pinyinFile = `韓文歌曲
+https://www.youtube.com/watch?v=ZFB0hroV3jw
+#PINYIN_ENABLED
+
+Line 1 | Word 1 | 00:01:00 → 00:01:50 | 미 | mi
+Line 1 | Word 2 | 00:01:50 → 00:02:20 | 치 | chi`;
+
+            const result = SubtitleParser.parseSubtitleFile(pinyinFile);
+
+            expect(result.error).toBeUndefined();
+            expect(result.hasPinyin).toBe(true);
+            expect(result.data[0].word).toBe('미');
+            expect(result.data[0].pinyin).toBe('mi');
+            expect(result.data[1].pinyin).toBe('chi');
+        });
+
+        test('should set hasPinyin to false when marker is missing', () => {
+            const result = SubtitleParser.parseSubtitleFile(validSubtitleFile);
+            expect(result.hasPinyin).toBe(false);
         });
 
         test('should insert buffer circles when first entry starts after 4 seconds', () => {

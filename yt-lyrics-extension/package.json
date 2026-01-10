@@ -10,7 +10,8 @@
     "devDependencies": {
         "jest": "^29.7.0",
         "jest-environment-jsdom": "^29.7.0",
-        "jsdom": "^27.4.0"
+        "jsdom": "^27.4.0",
+        "puppeteer": "^24.34.0"
     },
     "jest": {
         "testEnvironment": "node",
