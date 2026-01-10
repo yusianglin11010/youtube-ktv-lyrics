@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>KTV 歌詞對齊測試 - 單層漸層方案</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #1a1a1a;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 { margin-bottom: 20px; }
+
+        /* 模擬 YouTube 播放器區域 */
+        #player-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 16/9;
+            background: #000;
+            margin-bottom: 20px;
+        }
+
+        /* 歌詞容器樣式（與擴充功能相同） */
+        #yt-ktv-lyrics-container {
+            position: absolute;
+            bottom: 60px;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #yt-ktv-lyrics-display {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .yt-ktv-line {
+            margin: 5px 0;
+            min-height: 1.2em;
+        }
+
+        /* 控制面板 */
+        .controls {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .controls label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        .controls input[type="range"] {
+            width: 200px;
+        }
+        .controls button {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        /* 狀態顯示 */
+        #status {
+            background: #222;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>KTV 歌詞測試 - 單層漸層方案（無對齊問題）</h1>
+
+        <div class="controls">
+            <label>時間進度: <span id="time-display">0.00</span>s</label>
+            <input type="range" id="time-slider" min="0" max="30" step="0.1" value="0">
+            <br>
+            <button id="btn-play">播放</button>
+            <button id="btn-pause">暫停</button>
+            <button id="btn-reset">重置</button>
+            <br>
+            <label>字體大小: <span id="font-size-display">40</span>px</label>
+            <input type="range" id="font-size-slider" min="20" max="80" step="2" value="40">
+        </div>
+
+        <div id="player-container">
+            <!-- 歌詞覆蓋層 -->
+            <div id="yt-ktv-lyrics-container">
+                <div id="yt-ktv-lyrics-display"></div>
+            </div>
+        </div>
+
+        <div id="status">載入中...</div>
+    </div>
+
+    <script>
+        // ========== 設定 ==========
+        const settings = {
+            fontSize: 40,
+            highlightColor: '#80D9E5',
+            shadowColor: '#1D1B1B'
+        };
+
+        // ========== 測試資料 ==========
+        const subtitleData = [
+            // 第 1 行 - 韓文有拼音
+            { line: 1, wordIndex: 1, startTime: 1.0, endTime: 1.8, word: 'Oh', pinyin: 'Oh' },
+            { line: 1, wordIndex: 2, startTime: 1.8, endTime: 2.5, word: '네', pinyin: 'ne' },
+            { line: 1, wordIndex: 3, startTime: 2.5, endTime: 3.0, word: '맘', pinyin: 'mam' },
+            { line: 1, wordIndex: 4, startTime: 3.0, endTime: 3.5, word: '이', pinyin: 'i' },
+            { line: 1, wordIndex: 5, startTime: 3.5, endTime: 4.2, word: '란', pinyin: 'ran' },
+            { line: 1, wordIndex: 6, startTime: 4.2, endTime: 5.0, word: '추는', pinyin: 'chu neun' },
+
+            // 第 2 行 - 英文無拼音
+            { line: 2, wordIndex: 1, startTime: 5.5, endTime: 6.5, word: "Oh,", pinyin: null },
+            { line: 2, wordIndex: 2, startTime: 6.5, endTime: 7.5, word: "I'm", pinyin: null },
+            { line: 2, wordIndex: 3, startTime: 7.5, endTime: 9.0, word: "drowning", pinyin: null },
+
+            // 第 3 行 - 混合
+            { line: 3, wordIndex: 1, startTime: 10.0, endTime: 11.0, word: '나', pinyin: 'na' },
+            { line: 3, wordIndex: 2, startTime: 11.0, endTime: 12.0, word: 'love', pinyin: null },
+            { line: 3, wordIndex: 3, startTime: 12.0, endTime: 13.0, word: '너', pinyin: 'neo' },
+
+            // 第 4 行
+            { line: 4, wordIndex: 1, startTime: 14.0, endTime: 15.5, word: 'Test', pinyin: null },
+            { line: 4, wordIndex: 2, startTime: 15.5, endTime: 17.0, word: '測試', pinyin: 'ce shi' },
+        ];
+
+        // ========== 狀態 ==========
+        let currentTime = 0;
+        let isPlaying = false;
+        let animationId = null;
+        let currentOddLineIndex = 1;
+        let currentEvenLineIndex = 2;
+
+        // ========== DOM 元素 ==========
+        const displayArea = document.getElementById('yt-ktv-lyrics-display');
+        const timeSlider = document.getElementById('time-slider');
+        const timeDisplay = document.getElementById('time-display');
+        const fontSizeSlider = document.getElementById('font-size-slider');
+        const fontSizeDisplay = document.getElementById('font-size-display');
+        const statusEl = document.getElementById('status');
+
+        // ========== 核心函數：建立單字元素（單層漸層方案） ==========
+        function createWordSpanWithRefs(entry, currentTime) {
+            const wordSpan = document.createElement('span');
+            wordSpan.classList.add('yt-ktv-word');
+            wordSpan.style.display = 'inline-block';
+            wordSpan.style.marginRight = '4px';
+            wordSpan.style.verticalAlign = 'bottom';
+
+            // 內容容器
+            const content = document.createElement('span');
+            content.classList.add('yt-ktv-content');
+            content.style.display = 'flex';
+            content.style.flexDirection = 'column';
+            content.style.alignItems = 'flex-start';
+
+            let pinyinEl = null;
+
+            // 拼音（使用單層漸層）
+            if (entry.pinyin) {
+                pinyinEl = document.createElement('span');
+                pinyinEl.classList.add('yt-ktv-pronunciation');
+                pinyinEl.style.fontSize = (settings.fontSize * 0.4) + 'px';
+                pinyinEl.style.lineHeight = '1.2';
+                pinyinEl.style.whiteSpace = 'nowrap';
+                // 漸層背景：左邊高亮色，右邊白色（透明度0.8）
+                pinyinEl.style.background = `linear-gradient(90deg, ${settings.highlightColor} 0%, ${settings.highlightColor} 50%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0.8) 100%)`;
+                pinyinEl.style.backgroundSize = '200% 100%';
+                pinyinEl.style.backgroundPosition = '100% 0';
+                pinyinEl.style.webkitBackgroundClip = 'text';
+                pinyinEl.style.backgroundClip = 'text';
+                pinyinEl.style.webkitTextFillColor = 'transparent';
+                pinyinEl.style.color = 'transparent';
+                pinyinEl.textContent = entry.pinyin;
+                content.appendChild(pinyinEl);
+            }
+
+            // 主字（使用單層漸層）
+            const textEl = document.createElement('span');
+            textEl.classList.add('yt-ktv-main-text');
+            textEl.style.fontSize = settings.fontSize + 'px';
+            textEl.style.lineHeight = '1';
+            // 漸層背景：左邊高亮色，右邊白色
+            textEl.style.background = `linear-gradient(90deg, ${settings.highlightColor} 0%, ${settings.highlightColor} 50%, white 50%, white 100%)`;
+            textEl.style.backgroundSize = '200% 100%';
+            textEl.style.backgroundPosition = '100% 0';
+            textEl.style.webkitBackgroundClip = 'text';
+            textEl.style.backgroundClip = 'text';
+            textEl.style.webkitTextFillColor = 'transparent';
+            textEl.style.color = 'transparent';
+            textEl.textContent = entry.word;
+            content.appendChild(textEl);
+
+            wordSpan.appendChild(content);
+
+            return {
+                element: wordSpan,
+                entry: entry,
+                textEl: textEl,
+                pinyinEl: pinyinEl
+            };
+        }
+
+        // ========== 高亮動畫（使用 background-position） ==========
+        function animateWordHighlight(entry, textEl, currentTime) {
+            const totalDuration = entry.endTime - entry.startTime;
+            const elapsedTime = Math.max(0, currentTime - entry.startTime);
+            const progress = Math.min(1, elapsedTime / totalDuration);
+
+            // background-position: 100% = 未開始 (顯示白色)
+            // background-position: 0% = 完成 (顯示高亮色)
+            const bgPosition = (1 - progress) * 100;
+            textEl.style.backgroundPosition = `${bgPosition}% 0`;
+        }
+
+        // ========== 更新顯示 ==========
+        let wordElements = [];
+
+        function updateDisplay(time) {
+            const maxLine = Math.max(...subtitleData.map(e => e.line));
+
+            // 取得當前行數的字幕
+            const upperLyrics = subtitleData.filter(e => e.line === currentOddLineIndex);
+            const lowerLyrics = subtitleData.filter(e => e.line === currentEvenLineIndex);
+
+            // 重建 DOM
+            displayArea.innerHTML = '';
+            wordElements = [];
+
+            // 上方行
+            const upperLineDiv = document.createElement('div');
+            upperLineDiv.classList.add('yt-ktv-line');
+            upperLyrics.forEach(entry => {
+                const wordData = createWordSpanWithRefs(entry, time);
+                upperLineDiv.appendChild(wordData.element);
+                wordElements.push(wordData);
+            });
+
+            // 下方行
+            const lowerLineDiv = document.createElement('div');
+            lowerLineDiv.classList.add('yt-ktv-line');
+            lowerLyrics.forEach(entry => {
+                const wordData = createWordSpanWithRefs(entry, time);
+                lowerLineDiv.appendChild(wordData.element);
+                wordElements.push(wordData);
+            });
+
+            displayArea.appendChild(upperLineDiv);
+            displayArea.appendChild(lowerLineDiv);
+
+            // 更新高亮
+            wordElements.forEach(({ entry, textEl, pinyinEl }) => {
+                animateWordHighlight(entry, textEl, time);
+                if (pinyinEl) {
+                    animateWordHighlight(entry, pinyinEl, time);
+                }
+            });
+
+            // 換行邏輯
+            if (upperLyrics.length > 0 && time > upperLyrics[upperLyrics.length - 1].endTime + 0.6 && maxLine >= currentOddLineIndex + 2) {
+                currentOddLineIndex += 2;
+            }
+            if (lowerLyrics.length > 0 && time > lowerLyrics[lowerLyrics.length - 1].endTime + 0.6 && maxLine >= currentEvenLineIndex + 2) {
+                currentEvenLineIndex += 2;
+            }
+
+            // 更新狀態
+            statusEl.textContent = `時間: ${time.toFixed(2)}s
+上方行: ${currentOddLineIndex} (${upperLyrics.map(e => e.word).join(' ')})
+下方行: ${currentEvenLineIndex} (${lowerLyrics.map(e => e.word).join(' ')})
+字體大小: ${settings.fontSize}px
+方案: 單層漸層 (無對齊問題)`;
+        }
+
+        // ========== 播放控制 ==========
+        function play() {
+            if (isPlaying) return;
+            isPlaying = true;
+            let lastTime = performance.now();
+
+            function tick(now) {
+                if (!isPlaying) return;
+                const delta = (now - lastTime) / 1000;
+                lastTime = now;
+                currentTime += delta;
+
+                if (currentTime > 30) {
+                    currentTime = 0;
+                    currentOddLineIndex = 1;
+                    currentEvenLineIndex = 2;
+                }
+
+                timeSlider.value = currentTime;
+                timeDisplay.textContent = currentTime.toFixed(2);
+                updateDisplay(currentTime);
+
+                animationId = requestAnimationFrame(tick);
+            }
+            animationId = requestAnimationFrame(tick);
+        }
+
+        function pause() {
+            isPlaying = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        function reset() {
+            pause();
+            currentTime = 0;
+            currentOddLineIndex = 1;
+            currentEvenLineIndex = 2;
+            timeSlider.value = 0;
+            timeDisplay.textContent = '0.00';
+            updateDisplay(0);
+        }
+
+        // ========== 事件監聽 ==========
+        document.getElementById('btn-play').addEventListener('click', play);
+        document.getElementById('btn-pause').addEventListener('click', pause);
+        document.getElementById('btn-reset').addEventListener('click', reset);
+
+        timeSlider.addEventListener('input', (e) => {
+            currentTime = parseFloat(e.target.value);
+            timeDisplay.textContent = currentTime.toFixed(2);
+
+            // 重新計算當前行
+            const nearestEntry = subtitleData.find(entry => entry.startTime >= currentTime);
+            if (nearestEntry) {
+                if (nearestEntry.line % 2 === 1) {
+                    currentOddLineIndex = nearestEntry.line;
+                    currentEvenLineIndex = currentOddLineIndex + 1;
+                } else {
+                    currentEvenLineIndex = nearestEntry.line;
+                    currentOddLineIndex = currentEvenLineIndex + 1;
+                }
+            }
+
+            updateDisplay(currentTime);
+        });
+
+        fontSizeSlider.addEventListener('input', (e) => {
+            settings.fontSize = parseInt(e.target.value);
+            fontSizeDisplay.textContent = settings.fontSize;
+            updateDisplay(currentTime);
+        });
+
+        // ========== 初始化 ==========
+        updateDisplay(0);
+        statusEl.textContent = '準備就緒。點擊「播放」開始測試。\n方案: 單層漸層（無對齊問題）';
+    </script>
+</body>
+</html>

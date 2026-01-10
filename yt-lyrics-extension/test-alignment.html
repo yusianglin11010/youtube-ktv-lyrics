@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>對齊測試</title>
+    <style>
+        body {
+            background: #333;
+            padding: 50px;
+            font-family: sans-serif;
+        }
+        #test-container {
+            background: rgba(0,0,0,0.5);
+            padding: 20px;
+        }
+        .test-case {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #666;
+        }
+        .test-case h3 {
+            color: white;
+            margin: 0 0 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="test-container">
+        <h2 style="color: white;">高亮對齊測試</h2>
+        <div class="test-case">
+            <h3>測試 1: 有拼音的韓文</h3>
+            <div id="test1"></div>
+        </div>
+        <div class="test-case">
+            <h3>測試 2: 無拼音的英文</h3>
+            <div id="test2"></div>
+        </div>
+        <div class="test-case">
+            <h3>測試 3: 混合</h3>
+            <div id="test3"></div>
+        </div>
+    </div>
+
+    <script>
+        // 模擬設定
+        const settings = {
+            fontSize: 40,
+            highlightColor: '#80D9E5',
+            shadowColor: '#1D1B1B'
+        };
+
+        function createWordSpan(word, pinyin, progress) {
+            const wordSpan = document.createElement('span');
+            wordSpan.style.display = 'inline-block';
+            wordSpan.style.marginRight = '4px';
+            wordSpan.style.verticalAlign = 'bottom';
+
+            // 主容器使用 CSS Grid
+            const mainTextWrapper = document.createElement('span');
+            mainTextWrapper.style.display = 'inline-grid';
+            mainTextWrapper.style.gridTemplateAreas = '"content"';
+
+            function createStackedContent(isHighlight) {
+                const container = document.createElement('span');
+                container.style.gridArea = 'content';
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.alignItems = 'flex-start';
+
+                // 拼音
+                if (pinyin) {
+                    const pinyinEl = document.createElement('span');
+                    pinyinEl.style.fontSize = (settings.fontSize * 0.4) + 'px';
+                    pinyinEl.style.lineHeight = '1.2';
+                    pinyinEl.style.whiteSpace = 'nowrap';
+                    if (isHighlight) {
+                        pinyinEl.style.clipPath = `inset(0 ${100 - progress}% 0 0)`;
+                        pinyinEl.style.color = settings.highlightColor;
+                        pinyinEl.style.textShadow = `2px 2px 5px ${settings.shadowColor}`;
+                    } else {
+                        pinyinEl.style.color = 'rgba(255, 255, 255, 0.8)';
+                        pinyinEl.style.textShadow = '1px 1px 3px rgba(0, 0, 0, 0.8)';
+                    }
+                    pinyinEl.textContent = pinyin;
+                    container.appendChild(pinyinEl);
+                }
+
+                // 主字
+                const textEl = document.createElement('span');
+                textEl.style.fontSize = settings.fontSize + 'px';
+                textEl.style.lineHeight = '1';
+                if (isHighlight) {
+                    textEl.style.clipPath = `inset(0 ${100 - progress}% 0 0)`;
+                    textEl.style.color = settings.highlightColor;
+                    textEl.style.textShadow = `2px 2px 5px ${settings.shadowColor}`;
+                } else {
+                    textEl.style.color = 'white';
+                    textEl.style.textShadow = `2px 2px 5px ${settings.shadowColor}`;
+                }
+                textEl.textContent = word;
+                container.appendChild(textEl);
+
+                return container;
+            }
+
+            // 底層
+            const baseLayer = createStackedContent(false);
+            mainTextWrapper.appendChild(baseLayer);
+
+            // 高亮層
+            const highlightLayer = createStackedContent(true);
+            highlightLayer.style.pointerEvents = 'none';
+            mainTextWrapper.appendChild(highlightLayer);
+
+            wordSpan.appendChild(mainTextWrapper);
+            return wordSpan;
+        }
+
+        // 測試 1: 有拼音
+        const test1 = document.getElementById('test1');
+        test1.appendChild(createWordSpan('미', 'mi', 50));
+        test1.appendChild(createWordSpan('안', 'an', 100));
+        test1.appendChild(createWordSpan('녕', 'nyeong', 0));
+
+        // 測試 2: 無拼音
+        const test2 = document.getElementById('test2');
+        test2.appendChild(createWordSpan('Oh,', null, 100));
+        test2.appendChild(createWordSpan("I'm", null, 50));
+        test2.appendChild(createWordSpan('drowning', null, 0));
+
+        // 測試 3: 混合
+        const test3 = document.getElementById('test3');
+        test3.appendChild(createWordSpan('한', 'han', 100));
+        test3.appendChild(createWordSpan('and', null, 50));
+        test3.appendChild(createWordSpan('국', 'guk', 0));
+    </script>
+</body>
+</html>
