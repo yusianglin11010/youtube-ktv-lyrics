@@ -775,6 +775,9 @@ function exportTimestamps() {
         return baseLine;
     }).join("\n");
 
+    // 加入結尾慶祝文字
+    content += "\n\n☆～來賓請掌聲鼓勵～☆\n☆～把酒同歡 歡樂無限～☆";
+
     // 創建下載連結
     let blob = new Blob([content], { type: "text/plain" });
     let a = document.createElement("a");

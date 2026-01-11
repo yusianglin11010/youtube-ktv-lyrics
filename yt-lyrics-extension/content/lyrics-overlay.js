@@ -72,6 +72,7 @@ const LyricsOverlay = (function() {
         cachedUpperLineIndex = -1;
         cachedLowerLineIndex = -1;
         wordElements = [];
+        isShowingEndMessage = false;
 
         if (displayArea) {
             displayArea.innerHTML = '';
@@ -144,6 +145,7 @@ const LyricsOverlay = (function() {
     let cachedUpperLineIndex = -1;
     let cachedLowerLineIndex = -1;
     let wordElements = []; // 儲存 {entry, highlightText, pinyinHighlight} 的陣列
+    let isShowingEndMessage = false; // 是否正在顯示結尾訊息
 
     /**
      * 更新歌詞顯示
@@ -159,6 +161,22 @@ const LyricsOverlay = (function() {
 
         // 獲取字幕的最大行數
         const maxLine = Math.max(...subtitleData.map(entry => entry.line));
+
+        // 檢查是否所有歌詞已播放完畢
+        const lastEntry = subtitleData[subtitleData.length - 1];
+        if (lastEntry && adjustedTime > lastEntry.endTime + 1.5) {
+            // 歌詞已結束，顯示慶祝訊息
+            if (!isShowingEndMessage) {
+                showEndMessage();
+                isShowingEndMessage = true;
+            }
+            return;
+        } else if (isShowingEndMessage && adjustedTime <= lastEntry.endTime) {
+            // 使用者倒退播放，重新顯示歌詞
+            isShowingEndMessage = false;
+            cachedUpperLineIndex = -1;
+            cachedLowerLineIndex = -1;
+        }
 
         // 判斷是否發生快進快退（時間跳躍超過 0.5 秒）
         if (Math.abs(adjustedTime - lastUpdateTime) > 0.5) {
@@ -322,6 +340,35 @@ const LyricsOverlay = (function() {
     }
 
     /**
+     * 顯示結尾慶祝訊息
+     */
+    function showEndMessage() {
+        if (!displayArea) return;
+
+        displayArea.innerHTML = '';
+        wordElements = [];
+
+        // 建立上方行
+        const upperLineDiv = document.createElement('div');
+        upperLineDiv.classList.add('yt-ktv-line');
+        upperLineDiv.style.fontSize = settings.fontSize + 'px';
+        upperLineDiv.style.color = settings.highlightColor;
+        upperLineDiv.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
+        upperLineDiv.textContent = '☆～來賓請掌聲鼓勵～☆';
+
+        // 建立下方行
+        const lowerLineDiv = document.createElement('div');
+        lowerLineDiv.classList.add('yt-ktv-line');
+        lowerLineDiv.style.fontSize = settings.fontSize + 'px';
+        lowerLineDiv.style.color = settings.highlightColor;
+        lowerLineDiv.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
+        lowerLineDiv.textContent = '☆～把酒同歡 歡樂無限～☆';
+
+        displayArea.appendChild(upperLineDiv);
+        displayArea.appendChild(lowerLineDiv);
+    }
+
+    /**
      * 啟動動畫循環
      * @param {function} getTimeFunction - 取得當前時間的函式
      */
@@ -406,6 +453,7 @@ const LyricsOverlay = (function() {
         cachedUpperLineIndex = -1;
         cachedLowerLineIndex = -1;
         wordElements = [];
+        isShowingEndMessage = false;
         clearAllTimeouts();
 
         if (displayArea) {
