@@ -253,7 +253,6 @@ const LyricsOverlay = (function() {
         const wordSpan = document.createElement('span');
         wordSpan.classList.add('yt-ktv-word');
         wordSpan.style.display = 'inline-block';
-        wordSpan.style.marginRight = '8px'; // 增加單字間距，改善英文可讀性
         wordSpan.style.verticalAlign = 'bottom';
         // 添加外層陰影效果，增強可讀性（不影響 background-clip: text）
         wordSpan.style.filter = 'drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8))';

@@ -50,7 +50,7 @@
     white-space: nowrap;
     font-size: inherit;
     font-weight: bold;
-    margin-right: 1px;
+    margin-right: 0.3em;
     transition: font-size 0.2s ease-in-out;
 }
 
