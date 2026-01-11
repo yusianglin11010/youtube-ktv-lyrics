@@ -253,8 +253,10 @@ const LyricsOverlay = (function() {
         const wordSpan = document.createElement('span');
         wordSpan.classList.add('yt-ktv-word');
         wordSpan.style.display = 'inline-block';
-        wordSpan.style.marginRight = '4px';
+        wordSpan.style.marginRight = '8px'; // 增加單字間距，改善英文可讀性
         wordSpan.style.verticalAlign = 'bottom';
+        // 添加外層陰影效果，增強可讀性（不影響 background-clip: text）
+        wordSpan.style.filter = 'drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8))';
 
         // 內容容器
         const content = document.createElement('span');
@@ -272,14 +274,15 @@ const LyricsOverlay = (function() {
             pinyinEl.style.fontSize = (settings.fontSize * 0.4) + 'px';
             pinyinEl.style.lineHeight = '1.2';
             pinyinEl.style.whiteSpace = 'nowrap';
-            // 漸層背景：左邊高亮色，右邊白色（透明度0.8）
-            pinyinEl.style.background = `linear-gradient(90deg, ${settings.highlightColor} 0%, ${settings.highlightColor} 50%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0.8) 100%)`;
+            // 漸層背景：左邊高亮色，右邊白色
+            pinyinEl.style.background = `linear-gradient(90deg, ${settings.highlightColor} 0%, ${settings.highlightColor} 50%, white 50%, white 100%)`;
             pinyinEl.style.backgroundSize = '200% 100%';
             pinyinEl.style.backgroundPosition = '100% 0'; // 初始顯示白色
             pinyinEl.style.webkitBackgroundClip = 'text';
             pinyinEl.style.backgroundClip = 'text';
             pinyinEl.style.webkitTextFillColor = 'transparent';
             pinyinEl.style.color = 'transparent';
+            pinyinEl.style.textShadow = 'none'; // 禁用 text-shadow，避免與 background-clip: text 衝突
             pinyinEl.textContent = entry.pinyin;
             content.appendChild(pinyinEl);
         }
@@ -297,6 +300,7 @@ const LyricsOverlay = (function() {
         textEl.style.backgroundClip = 'text';
         textEl.style.webkitTextFillColor = 'transparent';
         textEl.style.color = 'transparent';
+        textEl.style.textShadow = 'none'; // 禁用 text-shadow，避免與 background-clip: text 衝突
         textEl.innerHTML = entry.word
             .replace(/␣␣/g, '&nbsp;&nbsp;')
             .replace(/␣/g, '&nbsp;');
