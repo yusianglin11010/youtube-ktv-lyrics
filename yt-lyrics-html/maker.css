@@ -509,6 +509,88 @@ h1 {
     }
 }
 
+/* 🎭 角色選擇器 */
+.role-selector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #f8f9fb 0%, #f1f3f7 100%);
+    border-radius: 12px;
+    border: 1px solid #e1e8ed;
+}
+
+.role-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-right: 8px;
+}
+
+.role-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 2px solid #e1e8ed;
+    border-radius: 8px;
+    cursor: pointer;
+    background: white;
+    color: #2c3e50;
+    transition: all 0.2s ease;
+}
+
+.role-btn:hover {
+    border-color: #5b9bd5;
+    background: #f8f9fb;
+}
+
+.role-btn.active {
+    background: linear-gradient(135deg, #5b9bd5 0%, #4a8bc2 100%);
+    border-color: #5b9bd5;
+    color: white;
+}
+
+/* 角色按鈕顏色標示 */
+.role-btn[data-role="1"].active {
+    background: linear-gradient(135deg, #FF6B9D 0%, #e55a8a 100%);
+    border-color: #FF6B9D;
+}
+
+.role-btn[data-role="2"].active {
+    background: linear-gradient(135deg, #98FB98 0%, #7be07b 100%);
+    border-color: #98FB98;
+    color: #2c3e50;
+}
+
+.role-btn[data-role="3"].active {
+    background: linear-gradient(135deg, #FFD700 0%, #e6c200 100%);
+    border-color: #FFD700;
+    color: #2c3e50;
+}
+
+/* 手機：角色選擇器調整 */
+@media (max-width: 768px) {
+    .role-selector {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px 16px;
+    }
+
+    .role-label {
+        width: 100%;
+        text-align: center;
+        margin-right: 0;
+        margin-bottom: 4px;
+    }
+
+    .role-btn {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+}
+
 /* 🎮 控制按鈕區 */
 .controls {
     display: flex;

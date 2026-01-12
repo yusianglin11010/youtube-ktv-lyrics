@@ -181,6 +181,35 @@ input[type="color"] {
     transform: scale(1.15);
 }
 
+/* 角色顏色設定區 */
+.role-color-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.role-color-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.role-color-item span {
+    min-width: 50px;
+    font-weight: 500;
+}
+
+.role-color-item input[type="color"] {
+    width: 36px;
+    height: 36px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 2px;
+}
+
 /* 載入字型 */
 @font-face {
     font-family: 'Huninn';
