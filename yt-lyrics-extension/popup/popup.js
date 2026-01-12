@@ -20,7 +20,11 @@
         shadowColor: document.getElementById('shadowColor'),
         timeOffset: document.getElementById('timeOffset'),
         timeOffsetValue: document.getElementById('timeOffsetValue'),
-        openOptions: document.getElementById('openOptions')
+        openOptions: document.getElementById('openOptions'),
+        // 角色顏色元素
+        role1Color: document.getElementById('role1Color'),
+        role2Color: document.getElementById('role2Color'),
+        role3Color: document.getElementById('role3Color')
     };
 
     // 當前狀態
@@ -64,6 +68,13 @@
             const offset = settings.timeOffset || 0;
             elements.timeOffset.value = offset * 100;
             elements.timeOffsetValue.textContent = `${offset.toFixed(2)}s`;
+
+            // 載入角色顏色
+            if (settings.roleColors) {
+                elements.role1Color.value = settings.roleColors['1'] || '#FF6B9D';
+                elements.role2Color.value = settings.roleColors['2'] || '#98FB98';
+                elements.role3Color.value = settings.roleColors['3'] || '#FFD700';
+            }
         } catch (error) {
             console.error('Failed to load settings:', error);
         }
@@ -78,7 +89,12 @@
             fontSize: 40,
             highlightColor: '#80D9E5',
             shadowColor: '#1D1B1B',
-            timeOffset: 0
+            timeOffset: 0,
+            roleColors: {
+                '1': '#FF6B9D',
+                '2': '#98FB98',
+                '3': '#FFD700'
+            }
         };
     }
 
@@ -208,6 +224,11 @@
 
         elements.highlightColor.addEventListener('input', debouncedHandleSettingChange);
         elements.shadowColor.addEventListener('input', debouncedHandleSettingChange);
+
+        // 角色顏色選擇器（加入 debounce）
+        elements.role1Color.addEventListener('input', debouncedHandleSettingChange);
+        elements.role2Color.addEventListener('input', debouncedHandleSettingChange);
+        elements.role3Color.addEventListener('input', debouncedHandleSettingChange);
 
         // 時間偏移
         elements.timeOffset.addEventListener('input', handleTimeOffsetChange);
@@ -352,7 +373,12 @@
             fontSize: parseInt(elements.fontSizeSlider.value, 10),
             highlightColor: elements.highlightColor.value,
             shadowColor: elements.shadowColor.value,
-            timeOffset: parseInt(elements.timeOffset.value, 10) / 100
+            timeOffset: parseInt(elements.timeOffset.value, 10) / 100,
+            roleColors: {
+                '1': elements.role1Color.value,
+                '2': elements.role2Color.value,
+                '3': elements.role3Color.value
+            }
         };
 
         try {

@@ -12,7 +12,12 @@ const Storage = (function() {
         fontSize: 40,
         highlightColor: '#80D9E5',
         shadowColor: '#1D1B1B',
-        timeOffset: 0
+        timeOffset: 0,
+        roleColors: {
+            '1': '#FF6B9D',  // 男聲 - 粉紅
+            '2': '#98FB98',  // 女聲 - 淺綠
+            '3': '#FFD700'   // 合聲 - 金黃
+        }
     };
 
     /**
