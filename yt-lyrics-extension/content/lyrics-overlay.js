@@ -18,13 +18,14 @@ const LyricsOverlay = (function() {
     let getTimeFn = null;
     let activeTimeouts = new Set(); // 追蹤所有活動的 setTimeout
 
-    // 設定
+    // 設定（角色顏色使用共用模組的預設值）
     let settings = {
         font: 'NotoSans',
         fontSize: 40,
         highlightColor: '#80D9E5',
         shadowColor: '#1D1B1B',
-        timeOffset: 0
+        timeOffset: 0,
+        roleColors: { ...SubtitleParser.ROLE_COLORS }
     };
 
     /**
@@ -275,6 +276,11 @@ const LyricsOverlay = (function() {
         // 添加外層陰影效果，增強可讀性（不影響 background-clip: text）
         wordSpan.style.filter = 'drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8))';
 
+        // 根據角色選擇高亮顏色
+        const highlightColor = (entry.role && settings.roleColors[entry.role])
+            ? settings.roleColors[entry.role]
+            : settings.highlightColor;
+
         // 內容容器
         const content = document.createElement('span');
         content.classList.add('yt-ktv-content');
@@ -292,7 +298,7 @@ const LyricsOverlay = (function() {
             pinyinEl.style.lineHeight = '1.2';
             pinyinEl.style.whiteSpace = 'nowrap';
             // 漸層背景：左邊高亮色，右邊白色
-            pinyinEl.style.background = `linear-gradient(90deg, ${settings.highlightColor} 0%, ${settings.highlightColor} 50%, white 50%, white 100%)`;
+            pinyinEl.style.background = `linear-gradient(90deg, ${highlightColor} 0%, ${highlightColor} 50%, white 50%, white 100%)`;
             pinyinEl.style.backgroundSize = '200% 100%';
             pinyinEl.style.backgroundPosition = '100% 0'; // 初始顯示白色
             pinyinEl.style.webkitBackgroundClip = 'text';
@@ -310,7 +316,7 @@ const LyricsOverlay = (function() {
         textEl.style.fontSize = settings.fontSize + 'px';
         textEl.style.lineHeight = '1';
         // 漸層背景：左邊高亮色，右邊白色
-        textEl.style.background = `linear-gradient(90deg, ${settings.highlightColor} 0%, ${settings.highlightColor} 50%, white 50%, white 100%)`;
+        textEl.style.background = `linear-gradient(90deg, ${highlightColor} 0%, ${highlightColor} 50%, white 50%, white 100%)`;
         textEl.style.backgroundSize = '200% 100%';
         textEl.style.backgroundPosition = '100% 0'; // 初始顯示白色
         textEl.style.webkitBackgroundClip = 'text';

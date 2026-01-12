@@ -6,6 +6,9 @@ let currentOddLineIndex = 1;  // 初始為第一行（奇數）
 let currentEvenLineIndex = 2; // 初始為第二行（偶數）
 let currentFontSize = 30; // 預設字體大小
 
+// 角色顏色設定（使用共用模組的預設值，可被使用者覆寫）
+let roleColors = { ...SubtitleParser.ROLE_COLORS };
+
 window.onload = function () {
     // **確保 #player-container 存在**
     let playerContainer = document.getElementById("player-container");
@@ -232,18 +235,9 @@ function startSyncTimer() {
     }, 1); // 1ms 更新一次，確保流暢
 }
 
-// 從網址提取 YouTube 影片 ID
+// 從網址提取 YouTube 影片 ID（使用共用模組）
 function extractVideoId(url) {
-    let videoId = null;
-
-    // 嘗試匹配不同的 YouTube 影片網址格式
-    let match = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:.*v=|.*\/)|youtu\.be\/)([^#\&\?]{11})/);
-
-    if (match) {
-        videoId = match[1]; // 取得影片 ID
-    }
-
-    return videoId;
+    return SubtitleParser.extractVideoId(url);
 }
 
 document.getElementById("subtitleFile").addEventListener("change", function() {
@@ -287,110 +281,26 @@ function loadSubtitleFile() {
 // 全域變數：是否有拼音
 let hasPinyin = false;
 
+// 解析字幕格式（使用共用模組）
 function parseSubtitleFormat(text) {
-    // **拆分成行，保留行內空格**
-    const lines = text.split("\n").filter(line => line.trim() !== "");
+    const result = SubtitleParser.parseSubtitleFile(text);
 
-    if (lines.length < 3) {
-        alert("❌ 字幕檔案格式錯誤！");
+    if (result.error) {
+        alert("❌ " + result.error);
         return;
     }
-
-    const videoUrl = lines[1]; // 第二行是影片網址
-    let startIndex = 2;
-    hasPinyin = false;
-
-    // 檢查是否有拼音標記
-    if (lines[2] === "#PINYIN_ENABLED") {
-        hasPinyin = true;
-        startIndex = 3;
-    }
-
-    const subtitleLines = lines.slice(startIndex); // 從標記後開始是字幕內容
 
     // 直接載入 YouTube 影片
-    let videoId = extractVideoId(videoUrl);
-    if (!videoId) {
-        alert("❌ 字幕檔內的影片網址無效！");
-        return;
-    }
-
     if (player) {
-        player.loadVideoById(videoId);
+        player.loadVideoById(result.videoId);
     }
 
-    subtitleData = [];
-    let previousEndTime = 0; // 記錄上一個字的結束時間
-    let previousLine = 0; // 記錄上一個行的編號
-
-    // 擴充格式的正則表達式（支援拼音欄位）
-    const extendedRegex = /Line (\d+) \| Word (\d+) \| (\d{2}):(\d{2}):(\d{2}) → (\d{2}):(\d{2}):(\d{2}) \| ([^|]+)(?:\| (.*))?/;
-
-    subtitleLines.forEach((line, index) => {
-        // **解析字幕行**
-        const match = line.match(extendedRegex);
-        if (match) {
-            let lineNumber = parseInt(match[1]); // 目前的行數
-            let wordIndex = parseInt(match[2]); // 目前的單字索引
-            let startTime = timeToSeconds(`${match[3]}:${match[4]}:${match[5]}`);
-            let endTime = timeToSeconds(`${match[6]}:${match[7]}:${match[8]}`);
-            let wordText = match[9].trim().replace(/ /g, "␣").replace(/　/g, "␣␣"); // 保留空格
-            let pinyinText = match[10] ? match[10].trim() : null; // 拼音（如果有）
-
-            // **檢查是否需要插入圓圈**
-            if ((lineNumber !== previousLine && startTime - previousEndTime > 4) || (index === 0 && startTime >= 4)) {
-                let circleStartTime = Math.max(startTime - 3, 0); // 防止負數時間
-                let circleEndTime = startTime;
-
-                // 插入圓圈作為該行的第一個單詞
-                subtitleData.push({
-                    line: lineNumber,
-                    wordIndex: 1, // 圓圈永遠是該行的第一個字
-                    startTime: circleStartTime,
-                    endTime: circleEndTime,
-                    word: "•••",
-                    pinyin: null
-                });
-                subtitleData.push({
-                    line: lineNumber,
-                    wordIndex: 2, // 圓圈永遠是該行的第一個字
-                    startTime: circleEndTime,
-                    endTime: circleEndTime,
-                    word: "&nbsp;",
-                    pinyin: null
-                });
-
-                wordIndex += 2; // 讓原始行的第一個字變成 `Word 2`
-            }
-
-            // **添加原始字幕**
-            subtitleData.push({
-                line: lineNumber,
-                wordIndex: wordIndex,
-                startTime: startTime,
-                endTime: endTime,
-                word: wordText,
-                pinyin: pinyinText
-            });
-
-            previousEndTime = endTime; // 更新上一個字的結束時間
-            previousLine = lineNumber; // 更新上一個行的編號
-        }
-    });
-
-    if (subtitleData.length === 0) {
-        alert("❌ 無法解析字幕，可能是格式錯誤！");
-        return;
-    }
+    // 更新全域變數
+    subtitleData = result.data;
+    hasPinyin = result.hasPinyin;
 
     console.log("✅ 處理後的字幕數據：", subtitleData);
     console.log("📝 拼音模式：", hasPinyin);
-}
-
-// ⏲ 轉換時間格式 (00:18:98 → 秒數)
-function timeToSeconds(time) {
-    let [min, sec, ms] = time.split(":").map(parseFloat);
-    return min * 60 + sec + (ms / 100); // 轉換成秒數（支援毫秒）
 }
 
 // 📺 影片狀態變更
@@ -583,7 +493,13 @@ function updateLyricsDisplay(currentTime) {
         let elapsedTime = Math.max(0, currentTime - entry.startTime);
         let progress = Math.min(1, elapsedTime / totalDuration);
 
-        let highlightTextColor = document.getElementById("highlightTextColor").value;
+        // 根據角色選擇顏色
+        let highlightTextColor;
+        if (entry.role && roleColors[entry.role]) {
+            highlightTextColor = roleColors[entry.role];
+        } else {
+            highlightTextColor = document.getElementById("highlightTextColor").value;
+        }
         let highlightShadowColor = document.getElementById("highlightShadowColor").value;
 
         highlightText.style.clipPath = `inset(0 ${100 - progress * 100}% 0 0)`;
@@ -675,5 +591,18 @@ window.addEventListener('load', function() {
         // 如果不是預設顏色，標記「自訂」為選中
         document.getElementById('customColorBtn').classList.add('selected');
     }
+});
+
+// 🎭 角色顏色變更事件
+document.getElementById('role1Color').addEventListener('input', function() {
+    roleColors['1'] = this.value;
+});
+
+document.getElementById('role2Color').addEventListener('input', function() {
+    roleColors['2'] = this.value;
+});
+
+document.getElementById('role3Color').addEventListener('input', function() {
+    roleColors['3'] = this.value;
 });
 

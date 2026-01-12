@@ -69,18 +69,9 @@ function clearAllRecords() {
     updateProgressBar();
 }
 
-// 擷取影片ID
+// 擷取影片ID（使用共用模組）
 function extractVideoId(url) {
-    let videoId = null;
-
-    // 嘗試匹配不同的 YouTube 影片網址格式
-    let match = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:.*v=|.*\/)|youtu\.be\/)([^#\&\?]{11})/);
-
-    if (match) {
-        videoId = match[1]; // 取得影片 ID
-    }
-
-    return videoId;
+    return SubtitleParser.extractVideoId(url);
 }
 
 // 通知YouTubeAPI載入
@@ -122,6 +113,7 @@ let pinyinLyrics = [];  // 儲存逐字拆分的拼音
 let pinyinEnabled = false;  // 是否啟用拼音
 let currentWordIndex = 0;  // 當前變色的字索引
 let timestamps = [];  // 記錄按鍵時間
+let currentRole = '';  // 當前選擇的角色 ('', '1', '2', '3')
 
 // 讀取歌詞
 let totalWordsInSong = 0;
@@ -463,27 +455,56 @@ function formatTime(seconds) {
     return `${min}:${sec}:${ms}`;
 }
 
+// 角色選擇功能
+function setRole(role) {
+    currentRole = role;
+    document.querySelectorAll('.role-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.role === role);
+    });
+}
+
+// 角色選擇按鈕事件
+document.querySelectorAll('.role-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        setRole(this.dataset.role);
+    });
+});
+
 // 監聽鍵盤事件
 document.addEventListener("keydown", (event) => {
     // 取得當前焦點元素
     let activeElement = document.activeElement;
-    
+
     // 如果焦點在輸入框 (input 或 textarea)，則讓按鍵保持預設行為
     if (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA") {
         return; // 不攔截按鍵，讓使用者可以自由輸入
     }
 
-    // 否則，執行 KTV 字幕的快捷鍵
-    if (event.code === "Space" || event.code === "ArrowRight") {  
-        event.preventDefault();  
+    // 角色選擇快捷鍵 (數字鍵 0, 1, 2, 3)
+    if (event.code === "Digit0" || event.code === "Numpad0") {
+        event.preventDefault();
+        setRole('');
+    } else if (event.code === "Digit1" || event.code === "Numpad1") {
+        event.preventDefault();
+        setRole('1');
+    } else if (event.code === "Digit2" || event.code === "Numpad2") {
+        event.preventDefault();
+        setRole('2');
+    } else if (event.code === "Digit3" || event.code === "Numpad3") {
+        event.preventDefault();
+        setRole('3');
+    }
+    // KTV 字幕的快捷鍵
+    else if (event.code === "Space" || event.code === "ArrowRight") {
+        event.preventDefault();
         nextChar();
-    } else if (event.code === "ArrowLeft") {  
+    } else if (event.code === "ArrowLeft") {
         event.preventDefault();
         restartCurrentLine();
-    } else if (event.code === "ArrowUp") {  
+    } else if (event.code === "ArrowUp") {
         event.preventDefault();
         prevLine();
-    } else if (event.code === "ArrowDown") {  
+    } else if (event.code === "ArrowDown") {
         event.preventDefault();
         nextLine();
     }
@@ -552,16 +573,13 @@ function findFirstTimestampOfCurrentLine() {
     return null;
 }
 
-// **解析時間格式（mm:ss:ms）轉換為秒數**
+// **解析時間格式（mm:ss:ms）轉換為秒數（使用共用模組）**
 function parseTimeToSeconds(timeString) {
-    let parts = timeString.split(":");
-    if (parts.length === 3) {
-        let minutes = parseInt(parts[0], 10);
-        let seconds = parseInt(parts[1], 10);
-        let milliseconds = parseInt(parts[2], 10);
-        return minutes * 60 + seconds + milliseconds / 100;
+    try {
+        return SubtitleParser.timeToSeconds(timeString);
+    } catch (e) {
+        return null;
     }
-    return null;
 }
 
 function nextChar() {
@@ -596,7 +614,8 @@ function nextChar() {
             start: startTime,
             end: isLastWord ? endTime : "",  // ✅ 如果是最後一個字，設定 endTime
             word: lyrics[currentLineIndex][currentWordIndex],
-            pinyin: currentPinyin  // ✅ 新增拼音欄位
+            pinyin: currentPinyin,  // ✅ 新增拼音欄位
+            role: currentRole  // ✅ 新增角色欄位
         };
 
         // 推送時間紀錄
@@ -704,12 +723,20 @@ function updateTimestampsDisplay() {
     lastTimestampsUpdate = Date.now();
 }
 
+// 角色名稱對應
+const ROLE_NAMES = {
+    '1': '男聲',
+    '2': '女聲',
+    '3': '合聲'
+};
+
 function updateTimestampsTable() {
     let tableBody = document.querySelector("#timestampsTable tbody");
     tableBody.innerHTML = ""; // 清空舊的表格內容
 
     timestamps.forEach(t => {
         let row = document.createElement("tr");
+        let roleDisplay = t.role ? ROLE_NAMES[t.role] || t.role : '-';
 
         row.innerHTML = `
             <td>${t.word}</td>
@@ -717,6 +744,7 @@ function updateTimestampsTable() {
             <td>${t.wordIndex}</td>
             <td>${t.start || "--:--:--"}</td>
             <td>${t.end || "--:--:--"}</td>
+            <td>${roleDisplay}</td>
         `;
 
         tableBody.appendChild(row);
@@ -771,6 +799,14 @@ function exportTimestamps() {
         // 如果啟用拼音，加入拼音欄位
         if (pinyinEnabled) {
             baseLine += ` | ${t.pinyin || ''}`;
+        }
+        // 如果有角色，加入角色欄位
+        if (t.role) {
+            // 如果沒有拼音但有角色，需要先加一個空的拼音欄位
+            if (!pinyinEnabled) {
+                baseLine += ` |`;
+            }
+            baseLine += ` | ${t.role}`;
         }
         return baseLine;
     }).join("\n");

@@ -58,6 +58,7 @@
                                         <th>第～字</th>
                                         <th>開始於</th>
                                         <th>結束於</th>
+                                        <th>角色</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody> <!-- 這裡會由 JS 動態填入數據 -->
@@ -79,6 +80,15 @@
             <div id="lyricsDisplay"></div>
         </div>
 
+        <!-- 角色選擇器 -->
+        <div class="role-selector">
+            <span class="role-label">角色：</span>
+            <button class="role-btn active" data-role="">無</button>
+            <button class="role-btn" data-role="1">1 男聲</button>
+            <button class="role-btn" data-role="2">2 女聲</button>
+            <button class="role-btn" data-role="3">3 合聲</button>
+        </div>
+
         <!-- 控制按鈕 -->
         <div class="controls">
             <button id="prevLineBtn" onclick="prevLine()">⭡ 上一句</button>
@@ -95,6 +105,7 @@
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="lib/subtitle-parser.js"></script> <!-- 共用字幕解析模組 -->
     <script src="maker.js"></script>
 
     <!-- 完成時放煙火 -->
