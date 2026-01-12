@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>鍵盤操作測試 - 上下佈局</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 40px;
+            background: #f5f7fa;
+        }
+
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .instructions {
+            padding: 12px 16px;
+            background: #e7f3ff;
+            border-left: 4px solid #2196f3;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+
+        .mapping-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: #f8f9fb;
+            border-radius: 6px;
+        }
+
+        .pinyin-list-horizontal, .lyrics-list-horizontal {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 20px;
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            min-height: 80px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pinyin-item, .lyric-item {
+            padding: 14px 20px;
+            border: 3px solid #e1e8ed;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 60px;
+        }
+
+        .pinyin-item:hover:not(.selected):not(.mapped):not(.focused),
+        .lyric-item:hover:not(.selected):not(.mapped):not(.focused) {
+            border-color: #5b9bd5;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(91, 155, 213, 0.3);
+        }
+
+        /* 焦點樣式（鍵盤操作用）*/
+        .pinyin-item.focused {
+            border-color: #ffc107;
+            border-width: 4px;
+            box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+            transform: scale(1.05);
+        }
+
+        .lyric-item.focused {
+            border-color: #ff6b9d;
+            border-width: 4px;
+            box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2);
+            transform: scale(1.05);
+        }
+
+        /* 選取樣式 */
+        .pinyin-item.selected {
+            background: #5b9bd5;
+            color: white;
+            border-color: #4a8bc2;
+            box-shadow: 0 4px 12px rgba(91, 155, 213, 0.5);
+        }
+
+        /* 已連結樣式 */
+        .pinyin-item.mapped,
+        .lyric-item.mapped {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+            cursor: default;
+            opacity: 0.7;
+        }
+
+        .mappings-display {
+            padding: 20px;
+            background: #f8f9fb;
+            border-radius: 8px;
+            min-height: 100px;
+        }
+
+        .mapping-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            margin: 6px 0;
+            background: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .mapping-entry .pinyin-part {
+            color: #5b9bd5;
+            font-weight: 600;
+        }
+
+        .mapping-entry .arrow {
+            color: #999;
+            margin: 0 10px;
+        }
+
+        .mapping-entry .lyric-part {
+            color: #ff6b9d;
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .mapping-entry .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .mapping-entry .delete-btn:hover {
+            background: #c82333;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .controls button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #6c757d;
+            color: white;
+        }
+
+        .controls button:hover {
+            background: #5a6268;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 12px;
+            background: #fff3cd;
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+            color: #856404;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>鍵盤操作測試 - 粉雪</h1>
+
+        <div class="instructions">
+            <strong>🎹 鍵盤操作：</strong><br>
+            <strong>拼音區</strong>：← → 移動焦點（黃框），Space 選取/取消（藍色）<br>
+            <strong>主歌詞區</strong>：W/A 左移，D 右移（粉紅框），Enter 建立連結<br>
+            <strong>其他</strong>：Esc 清除所有選取<br>
+            <br>
+            <strong>🖱️ 滑鼠操作：</strong><br>
+            點擊拼音選取（可多選），再點擊主歌詞建立連結
+        </div>
+
+        <!-- 上方：拼音列表 -->
+        <div class="mapping-section">
+            <div class="section-title">拼音音節（方向鍵 ← → 移動，Space 選取/取消）</div>
+            <div class="pinyin-list-horizontal" id="pinyinList">
+                <!-- 動態生成 -->
+            </div>
+        </div>
+
+        <!-- 中間：已建立的連結 -->
+        <div class="mapping-section">
+            <div class="section-title">已建立連結</div>
+            <div class="mappings-display" id="mappingsDisplay">
+                <div style="color: #999; text-align: center;">尚未建立</div>
+            </div>
+        </div>
+
+        <!-- 下方：主歌詞列表 -->
+        <div class="mapping-section">
+            <div class="section-title">主歌詞（W/A 左移，D 右移，Enter 連結）</div>
+            <div class="lyrics-list-horizontal" id="lyricsList">
+                <!-- 動態生成 -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="clearSelection()">清除選取 (Esc)</button>
+            <button onclick="undoLastMapping()">復原上一個</button>
+            <button onclick="resetAll()">重新開始</button>
+            <button onclick="validateComplete()" style="background: #28a745;">檢查完成度</button>
+        </div>
+
+        <div class="status" id="status">
+            請使用鍵盤或滑鼠操作
+        </div>
+    </div>
+
+    <script>
+        // 測試資料：粉雪第一句
+        let pinyinData = ['ko', 'na', 'yu', 'ki', 'ma', 'u'];
+        let lyricsData = ['粉', '雪', '舞', 'う', '季', '節'];
+
+        let currentPinyinFocus = 0;
+        let currentLyricFocus = 0;
+        let mappingSelection = [];
+        let mappings = [];
+        let mappedPinyin = new Set();
+        let mappedLyrics = new Set();
+
+        function init() {
+            renderInterface();
+            attachKeyboardHandlers();
+            updateStatus();
+        }
+
+        function renderInterface() {
+            // 渲染拼音列表
+            let pinyinList = document.getElementById('pinyinList');
+            pinyinList.innerHTML = pinyinData.map((syllable, idx) => {
+                let classes = ['pinyin-item'];
+                if (idx === currentPinyinFocus) classes.push('focused');
+                if (mappingSelection.includes(idx)) classes.push('selected');
+                if (mappedPinyin.has(idx)) classes.push('mapped');
+                return `<div class="${classes.join(' ')}" data-idx="${idx}">${syllable}</div>`;
+            }).join('');
+
+            // 渲染主歌詞列表
+            let lyricsList = document.getElementById('lyricsList');
+            lyricsList.innerHTML = lyricsData.map((word, idx) => {
+                let classes = ['lyric-item'];
+                if (idx === currentLyricFocus) classes.push('focused');
+                if (mappedLyrics.has(idx)) classes.push('mapped');
+                return `<div class="${classes.join(' ')}" data-idx="${idx}">${word}</div>`;
+            }).join('');
+
+            // 渲染已建立的連結
+            displayMappings();
+
+            // 附加點擊事件
+            attachClickHandlers();
+        }
+
+        function attachClickHandlers() {
+            // 拼音項目點擊
+            document.querySelectorAll('.pinyin-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    let idx = parseInt(item.dataset.idx);
+                    if (mappedPinyin.has(idx)) return;
+
+                    if (mappingSelection.includes(idx)) {
+                        mappingSelection = mappingSelection.filter(i => i !== idx);
+                    } else {
+                        mappingSelection.push(idx);
+                        mappingSelection.sort((a, b) => a - b);
+                    }
+                    renderInterface();
+                    updateStatus();
+                });
+            });
+
+            // 主歌詞項目點擊
+            document.querySelectorAll('.lyric-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    let idx = parseInt(item.dataset.idx);
+                    if (mappedLyrics.has(idx)) {
+                        alert('這個字已經被連結過了！');
+                        return;
+                    }
+                    connectMapping(idx);
+                });
+            });
+        }
+
+        function attachKeyboardHandlers() {
+            document.addEventListener('keydown', (e) => {
+                let handled = false;
+
+                // 拼音區操作：方向鍵左右
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (currentPinyinFocus > 0) {
+                        currentPinyinFocus--;
+                        renderInterface();
+                        updateStatus();
+                    }
+                    handled = true;
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (currentPinyinFocus < pinyinData.length - 1) {
+                        currentPinyinFocus++;
+                        renderInterface();
+                        updateStatus();
+                    }
+                    handled = true;
+                }
+                // 拼音區選取：Space
+                else if (e.key === ' ') {
+                    e.preventDefault();
+                    if (mappedPinyin.has(currentPinyinFocus)) {
+                        return;
+                    }
+
+                    if (mappingSelection.includes(currentPinyinFocus)) {
+                        mappingSelection = mappingSelection.filter(i => i !== currentPinyinFocus);
+                    } else {
+                        mappingSelection.push(currentPinyinFocus);
+                        mappingSelection.sort((a, b) => a - b);
+                    }
+                    renderInterface();
+                    updateStatus();
+                    handled = true;
+                }
+                // 主歌詞區操作：W/A (左) D (右)
+                else if (e.key.toLowerCase() === 'w' || e.key.toLowerCase() === 'a') {
+                    e.preventDefault();
+                    if (currentLyricFocus > 0) {
+                        currentLyricFocus--;
+                        renderInterface();
+                        updateStatus();
+                    }
+                    handled = true;
+                } else if (e.key.toLowerCase() === 'd') {
+                    e.preventDefault();
+                    if (currentLyricFocus < lyricsData.length - 1) {
+                        currentLyricFocus++;
+                        renderInterface();
+                        updateStatus();
+                    }
+                    handled = true;
+                }
+                // 主歌詞區連結：Enter
+                else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    connectMapping(currentLyricFocus);
+                    handled = true;
+                }
+                // 清除選取：Escape
+                else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    clearSelection();
+                    handled = true;
+                }
+            });
+        }
+
+        function connectMapping(lyricIdx) {
+            if (mappedLyrics.has(lyricIdx)) {
+                alert('這個字已經被連結過了！');
+                return;
+            }
+
+            if (mappingSelection.length === 0) {
+                alert('請先選取拼音音節！');
+                return;
+            }
+
+            // 檢查選取的拼音是否已被 mapping
+            let alreadyMapped = mappingSelection.some(idx => mappedPinyin.has(idx));
+            if (alreadyMapped) {
+                alert('選取的拼音中有些已經被 mapping 過了！');
+                return;
+            }
+
+            // 建立 mapping
+            let selectedPinyinText = mappingSelection.map(idx => pinyinData[idx]);
+            let mapping = {
+                pinyinIndices: [...mappingSelection],
+                pinyin: selectedPinyinText.join('+'),
+                lyricIdx: lyricIdx,
+                lyric: lyricsData[lyricIdx]
+            };
+
+            mappings.push(mapping);
+
+            // 標記為已 mapped
+            mappingSelection.forEach(idx => mappedPinyin.add(idx));
+            mappedLyrics.add(lyricIdx);
+
+            // 清空選取
+            mappingSelection = [];
+
+            // 自動移到下一個主歌詞字
+            if (currentLyricFocus < lyricsData.length - 1) {
+                currentLyricFocus++;
+            }
+
+            renderInterface();
+            updateStatus();
+        }
+
+        function displayMappings() {
+            let container = document.getElementById('mappingsDisplay');
+
+            if (mappings.length === 0) {
+                container.innerHTML = '<div style="color: #999; text-align: center; padding: 10px;">尚未建立</div>';
+                return;
+            }
+
+            container.innerHTML = mappings.map((m, idx) => `
+                <div class="mapping-entry">
+                    <span class="pinyin-part">${m.pinyin}</span>
+                    <span class="arrow">→</span>
+                    <span class="lyric-part">${m.lyric}</span>
+                    <button class="delete-btn" onclick="deleteMapping(${idx})">刪除</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteMapping(idx) {
+            let mapping = mappings[idx];
+
+            // 解除 mapped 標記
+            mapping.pinyinIndices.forEach(pIdx => {
+                mappedPinyin.delete(pIdx);
+            });
+            mappedLyrics.delete(mapping.lyricIdx);
+
+            // 移除 mapping
+            mappings.splice(idx, 1);
+
+            renderInterface();
+            updateStatus();
+        }
+
+        function clearSelection() {
+            mappingSelection = [];
+            renderInterface();
+            updateStatus();
+        }
+
+        function undoLastMapping() {
+            if (mappings.length === 0) {
+                alert('沒有可復原的 mapping！');
+                return;
+            }
+
+            deleteMapping(mappings.length - 1);
+        }
+
+        function resetAll() {
+            if (!confirm('確定要重新開始？這會清除所有連結！')) return;
+
+            mappingSelection = [];
+            mappings = [];
+            mappedPinyin.clear();
+            mappedLyrics.clear();
+            currentPinyinFocus = 0;
+            currentLyricFocus = 0;
+
+            renderInterface();
+            updateStatus();
+        }
+
+        function validateComplete() {
+            if (mappedPinyin.size === pinyinData.length && mappedLyrics.size === lyricsData.length) {
+                alert('✅ 完成！所有拼音和主歌詞都已連結。\n\n' +
+                      mappings.map(m => `${m.pinyin} → ${m.lyric}`).join('\n'));
+            } else {
+                alert(`⚠️ 尚未完成\n\n` +
+                      `拼音：${mappedPinyin.size}/${pinyinData.length} 已連結\n` +
+                      `主歌詞：${mappedLyrics.size}/${lyricsData.length} 已連結`);
+            }
+        }
+
+        function updateStatus() {
+            let status = document.getElementById('status');
+
+            let pinyinFocusText = `拼音焦點: ${pinyinData[currentPinyinFocus]} [${currentPinyinFocus}]`;
+            let lyricFocusText = `主歌詞焦點: ${lyricsData[currentLyricFocus]} [${currentLyricFocus}]`;
+
+            if (mappingSelection.length > 0) {
+                let selectedText = mappingSelection.map(idx => pinyinData[idx]).join(' + ');
+                status.textContent = `${pinyinFocusText} | ${lyricFocusText} | 已選取: ${selectedText}`;
+            } else {
+                status.textContent = `${pinyinFocusText} | ${lyricFocusText}`;
+            }
+        }
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>
