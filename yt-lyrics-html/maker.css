@@ -876,3 +876,821 @@ h1 {
 #fireworks-overlay.active {
     background: rgba(0, 0, 0, 0.6); /* 60% 黑色半透明 */
 }
+
+/* ==============================================
+   Phase 3: Mapping UI Styles
+   ============================================== */
+
+/* Mapping Container */
+#mappingContainer {
+    width: 100%;
+    padding: 30px;
+    background: linear-gradient(135deg, #f8f9fb 0%, #f1f3f7 100%);
+    border-radius: 16px;
+    margin: 20px 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+#mappingContainer h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.mapping-instructions {
+    font-size: 16px;
+    color: #555;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    border-radius: 4px;
+    text-align: left;
+}
+
+/* Main Lyric Display */
+.main-lyrics-display {
+    margin-bottom: 20px;
+}
+
+.main-lyrics-display h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.main-lyric-text {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2c3e50;
+    padding: 16px 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    text-align: center;
+}
+
+/* Pinyin Syllables Area */
+.pinyin-syllables-area {
+    margin-bottom: 20px;
+}
+
+.pinyin-syllables-area h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.pinyin-container {
+    padding: 16px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Pinyin Syllable Styling */
+.pinyin-syllable {
+    display: inline-block;
+    padding: 10px 16px;
+    margin: 6px;
+    border: 2px solid #e1e8ed;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.pinyin-syllable:hover:not(.mapped) {
+    border-color: #5b9bd5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(91, 155, 213, 0.3);
+}
+
+.pinyin-syllable.selecting {
+    background: #5b9bd5;
+    color: white;
+    border-color: #4a8bc2;
+    box-shadow: 0 4px 12px rgba(91, 155, 213, 0.4);
+}
+
+.pinyin-syllable.mapped {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.pinyin-syllable.highlight {
+    background: #5b9bd5;
+    color: white;
+    border-color: #4a8bc2;
+    box-shadow: 0 4px 12px rgba(91, 155, 213, 0.5);
+    transform: scale(1.1);
+}
+
+/* Mappings Display */
+.mappings-display {
+    margin-top: 20px;
+}
+
+.mappings-display h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.mapping-entry {
+    display: inline-block;
+    padding: 8px 14px;
+    margin: 4px;
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #004085;
+}
+
+/* Mapping Input */
+.mapping-input {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.mapping-input input {
+    flex: 1;
+    padding: 14px 18px;
+    font-size: 18px;
+    border: 2px solid #e1e8ed;
+    border-radius: 8px;
+    transition: border-color 0.2s ease;
+}
+
+.mapping-input input:focus {
+    outline: none;
+    border-color: #5b9bd5;
+    box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.1);
+}
+
+.mapping-input button {
+    padding: 14px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mapping-input button:first-of-type {
+    background: #28a745;
+    color: white;
+}
+
+.mapping-input button:first-of-type:hover {
+    background: #218838;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.mapping-input button:nth-of-type(2) {
+    background: #6c757d;
+    color: white;
+}
+
+.mapping-input button:nth-of-type(2):hover {
+    background: #5a6268;
+}
+
+/* Mapping Progress */
+.mapping-progress {
+    margin-top: 20px;
+    padding: 12px 16px;
+    background: white;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.mapping-progress span {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Mapping Controls */
+.mapping-controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.mapping-controls button {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: #667eea;
+    color: white;
+}
+
+.mapping-controls button:hover {
+    background: #5568d3;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.mapping-controls button.export-btn {
+    background: #28a745;
+}
+
+.mapping-controls button.export-btn:hover {
+    background: #218838;
+}
+
+/* Main Lyric Preview (during Phase 2) */
+.main-lyric-preview {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 10px;
+    font-style: italic;
+    text-align: center;
+}
+
+/* Responsive Design for Mapping UI */
+@media (max-width: 768px) {
+    #mappingContainer {
+        padding: 20px 15px;
+    }
+
+    .main-lyric-text {
+        font-size: 22px;
+        padding: 12px 16px;
+    }
+
+    .pinyin-syllable {
+        padding: 8px 12px;
+        margin: 4px;
+        font-size: 16px;
+    }
+
+    .mapping-input {
+        flex-direction: column;
+    }
+
+    .mapping-input input,
+    .mapping-input button {
+        width: 100%;
+    }
+
+    .mapping-progress {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .mapping-controls {
+        flex-direction: column;
+    }
+
+    .mapping-controls button {
+        width: 100%;
+    }
+}
+
+/* ==============================================
+   連連看式 Mapping UI (上下式)
+   ============================================== */
+
+.mapping-section {
+    margin-bottom: 30px;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: #f8f9fb;
+    border-radius: 6px;
+}
+
+.pinyin-list-horizontal, .lyrics-list-horizontal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 20px;
+    background: white;
+    border: 2px solid #e1e8ed;
+    border-radius: 12px;
+    min-height: 80px;
+    align-items: center;
+    justify-content: center;
+}
+
+.pinyin-item, .lyric-item {
+    padding: 14px 20px;
+    border: 3px solid #e1e8ed;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 60px;
+}
+
+.pinyin-item:hover:not(.selected):not(.mapped):not(.focused),
+.lyric-item:hover:not(.selected):not(.mapped):not(.focused) {
+    border-color: #5b9bd5;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(91, 155, 213, 0.3);
+}
+
+/* 焦點樣式（鍵盤操作用）*/
+.pinyin-item.focused {
+    border-color: #ffc107;
+    border-width: 4px;
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+    transform: scale(1.05);
+}
+
+.lyric-item.focused {
+    border-color: #ff6b9d;
+    border-width: 4px;
+    box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2);
+    transform: scale(1.05);
+}
+
+/* 選取樣式 */
+.pinyin-item.selected {
+    background: #5b9bd5;
+    color: white;
+    border-color: #4a8bc2;
+    box-shadow: 0 4px 12px rgba(91, 155, 213, 0.5);
+}
+
+.lyric-item.selected {
+    background: #ff6b9d;
+    color: white;
+    border-color: #ff5a8e;
+    box-shadow: 0 4px 12px rgba(255, 107, 157, 0.5);
+}
+
+/* 已連結樣式 */
+.pinyin-item.mapped,
+.lyric-item.mapped {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+    cursor: default;
+    opacity: 0.7;
+}
+
+.mappings-display {
+    padding: 20px;
+    background: #f8f9fb;
+    border-radius: 8px;
+    min-height: 100px;
+}
+
+.mapping-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    margin: 6px 0;
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+.mapping-entry .pinyin-part {
+    color: #5b9bd5;
+    font-weight: 600;
+}
+
+.mapping-entry .arrow {
+    color: #999;
+    margin: 0 10px;
+}
+
+.mapping-entry .lyric-part {
+    color: #ff6b9d;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.mapping-entry .delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.mapping-entry .delete-btn:hover {
+    background: #c82333;
+}
+
+.mapping-keyboard-status {
+    margin-top: 20px;
+    padding: 12px;
+    background: #fff3cd;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: center;
+    color: #856404;
+    font-family: monospace;
+}
+
+/* ==============================================
+   Group Mapping Dialog
+   ============================================== */
+
+/* Group Mapping Button */
+.group-mapping-btn {
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    background: white;
+    color: #667eea;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+}
+
+.group-mapping-btn:hover {
+    background: #667eea;
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Dialog Container */
+.group-mapping-dialog {
+    width: 90vw;
+    max-width: 1200px;
+    max-height: 90vh;
+    padding: 0;
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.group-mapping-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+/* Dialog Header */
+.dialog-header {
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dialog-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.close-dialog-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 32px;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+}
+
+.close-dialog-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Instructions */
+.dialog-instructions {
+    padding: 16px 24px;
+    background: #e7f3ff;
+    border-left: 4px solid #2196f3;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+/* Dialog Content */
+.dialog-content {
+    padding: 24px;
+    overflow-y: auto;
+    max-height: calc(90vh - 350px);
+    background: #f5f7fa;
+}
+
+/* Mapping Section */
+.mapping-section {
+    margin-bottom: 24px;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: #f8f9fb;
+    border-radius: 6px;
+}
+
+/* Pinyin and Lyric Lists */
+.pinyin-list-horizontal, .lyrics-list-horizontal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 20px;
+    background: white;
+    border: 2px solid #e1e8ed;
+    border-radius: 12px;
+    min-height: 80px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Pinyin and Lyric Items */
+.pinyin-item, .lyric-item {
+    padding: 14px 20px;
+    border: 3px solid #e1e8ed;
+    border-radius: 10px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 60px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Pinyin annotation on top of lyric */
+.lyric-pinyin-annotation {
+    font-size: 14px;
+    color: #5b9bd5;
+    font-weight: 500;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+.lyric-char {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.pinyin-item:hover:not(.selected):not(.mapped):not(.focused),
+.lyric-item:hover:not(.selected):not(.mapped):not(.focused) {
+    border-color: #5b9bd5;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(91, 155, 213, 0.3);
+}
+
+/* Focused State (Keyboard) */
+.pinyin-item.focused {
+    border-color: #ffc107;
+    border-width: 4px;
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+    transform: scale(1.05);
+}
+
+.lyric-item.focused {
+    border-color: #ff6b9d;
+    border-width: 4px;
+    box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.2);
+    transform: scale(1.05);
+}
+
+/* Selected State */
+.pinyin-item.selected {
+    background: #5b9bd5;
+    color: white;
+    border-color: #4a8bc2;
+    box-shadow: 0 4px 12px rgba(91, 155, 213, 0.5);
+}
+
+/* Mapped State */
+.pinyin-item.mapped,
+.lyric-item.mapped {
+    background: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+    cursor: default;
+    opacity: 0.7;
+}
+
+/* Mappings Display */
+.mappings-display {
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    min-height: 60px;
+    border: 2px solid #e1e8ed;
+}
+
+.mappings-display-empty {
+    color: #999;
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.mapping-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    margin: 6px 0;
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+.mapping-entry .pinyin-part {
+    color: #5b9bd5;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.mapping-entry .arrow {
+    color: #999;
+    margin: 0 10px;
+}
+
+.mapping-entry .lyric-part {
+    color: #ff6b9d;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.mapping-entry .delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s ease;
+}
+
+.mapping-entry .delete-btn:hover {
+    background: #c82333;
+}
+
+/* Progress Display */
+.mapping-progress {
+    margin-top: 16px;
+    padding: 10px 16px;
+    background: #fff3cd;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: center;
+    color: #856404;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Dialog Footer */
+.dialog-footer {
+    padding: 20px 24px;
+    background: #f8f9fb;
+    border-top: 2px solid #e1e8ed;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mapping-navigation {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.mapping-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.dialog-footer button {
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#prevLineBtn, #nextLineBtn {
+    background: #6c757d;
+    color: white;
+    flex: 1;
+}
+
+#prevLineBtn:hover, #nextLineBtn:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.save-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20833a 100%);
+    color: white;
+}
+
+.save-btn:hover {
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    transform: translateY(-2px);
+}
+
+.cancel-btn {
+    background: #6c757d;
+    color: white;
+}
+
+.cancel-btn:hover {
+    background: #5a6268;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .group-mapping-dialog {
+        width: 95vw;
+        max-height: 95vh;
+    }
+
+    .dialog-content {
+        max-height: calc(95vh - 320px);
+    }
+
+    .dialog-footer {
+        padding: 16px;
+    }
+
+    .mapping-navigation {
+        flex-direction: column;
+    }
+
+    .mapping-actions {
+        flex-direction: column;
+    }
+
+    .dialog-footer button {
+        width: 100%;
+    }
+
+    .pinyin-item, .lyric-item {
+        font-size: 20px;
+        padding: 12px 16px;
+        min-width: 50px;
+    }
+}

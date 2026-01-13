@@ -40,6 +40,7 @@
                         <input type="checkbox" id="enablePinyin"> 啟用拼音字幕
                     </label>
                     <button type="button" class="validate-btn" onclick="validateAlignment()">驗證對齊</button>
+                    <button type="button" class="group-mapping-btn" onclick="openGroupMappingDialog()">群組 Mapping</button>
                 </div>
                 <div class="lyrics-button-container">
                     <button class="load-lyrics-btn" onclick="loadLyrics()">載入歌詞</button>
@@ -80,6 +81,41 @@
             <div id="lyricsDisplay"></div>
         </div>
 
+        <!-- Mapping 介面 -->
+        <div id="mappingContainer" style="display: none;">
+            <h2>拼音 → 主歌詞 Mapping</h2>
+            <div class="mapping-instructions">
+                <strong>🎹 鍵盤操作：</strong><br>
+                <strong>拼音區</strong>：← → 移動焦點（黃框），Space 選取/取消（藍色）<br>
+                <strong>主歌詞區</strong>：W/A 左移，D 右移（粉紅框），Enter 建立連結<br>
+                <strong>其他</strong>：Esc 清除所有選取<br>
+                <br>
+                <strong>🖱️ 滑鼠操作：</strong><br>
+                點擊拼音音節選取（可多選），再點擊主歌詞字元建立連結
+            </div>
+
+            <div id="mappingArea">
+                <!-- 動態生成 3 欄式連連看介面 -->
+            </div>
+
+            <div class="mapping-progress">
+                <span id="mappingStatus">第 1 行 / 共 10 行</span>
+                <span id="mappingCompleteness">已完成 0 字 / 共 50 字</span>
+            </div>
+
+            <div class="mapping-controls">
+                <button onclick="clearSelection()">清除選取 (Esc)</button>
+                <button onclick="undoLastMapping()">復原上一個</button>
+                <button onclick="prevMappingLine()">← 上一行</button>
+                <button onclick="nextMappingLine()">下一行 →</button>
+                <button onclick="validateAndExport()" class="export-btn">驗證並匯出</button>
+            </div>
+
+            <div class="mapping-keyboard-status" id="mappingKeyboardStatus">
+                請使用鍵盤或滑鼠操作
+            </div>
+        </div>
+
         <!-- 角色選擇器 -->
         <div class="role-selector">
             <span class="role-label">角色：</span>
@@ -103,6 +139,42 @@
     <div class="progress-container">
         <div id="progressBar" class="progress-bar"></div>
     </div>
+
+    <!-- 群組 Mapping Dialog -->
+    <dialog id="groupMappingDialog" class="group-mapping-dialog">
+        <div class="dialog-header">
+            <h2>拼音群組 Mapping</h2>
+            <button class="close-dialog-btn" onclick="closeGroupMappingDialog()">✕</button>
+        </div>
+
+        <div class="dialog-instructions">
+            <strong>🎹 鍵盤操作：</strong><br>
+            <strong>拼音區</strong>：← → 移動焦點（黃框），Space 選取/取消（藍色，自動跳下一個）<br>
+            <strong>主歌詞區</strong>：W/A 左移，D 右移（粉紅框），Enter 建立連結<br>
+            <strong>反悔</strong>：Backspace 刪除上一個 mapping<br>
+            <strong>其他</strong>：Esc 清除選取<br>
+            <br>
+            <strong>🖱️ 滑鼠操作：</strong><br>
+            點擊拼音選取（可多選），再點擊主歌詞建立連結
+        </div>
+
+        <div class="dialog-content">
+            <div id="groupMappingArea">
+                <!-- 動態生成內容 -->
+            </div>
+        </div>
+
+        <div class="dialog-footer">
+            <div class="mapping-navigation">
+                <button onclick="prevGroupMappingLine()" id="prevLineBtn">← 上一行</button>
+                <button onclick="nextGroupMappingLine()" id="nextLineBtn">下一行 →</button>
+            </div>
+            <div class="mapping-actions">
+                <button onclick="saveGroupMappings()" class="save-btn">儲存並更新</button>
+                <button onclick="closeGroupMappingDialog()" class="cancel-btn">取消</button>
+            </div>
+        </div>
+    </dialog>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script src="lib/subtitle-parser.js"></script> <!-- 共用字幕解析模組 -->

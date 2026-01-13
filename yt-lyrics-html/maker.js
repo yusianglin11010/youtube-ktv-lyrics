@@ -109,11 +109,31 @@ let timerInterval;
 
 // 歌詞變數定義
 let lyrics = [];  // 儲存逐字拆分的歌詞
-let pinyinLyrics = [];  // 儲存逐字拆分的拼音
+let pinyinLyrics = [];  // 儲存逐字拆分的拼音（Phase 2 的主要同步目標）
 let pinyinEnabled = false;  // 是否啟用拼音
-let currentWordIndex = 0;  // 當前變色的字索引
-let timestamps = [];  // 記錄按鍵時間
+let currentWordIndex = 0;  // 當前變色的字索引（Phase 2 時追蹤拼音音節）
+let timestamps = [];  // 記錄按鍵時間（由 mapping 生成）
 let currentRole = '';  // 當前選擇的角色 ('', '1', '2', '3')
+
+// 新的 pinyin-first workflow 變數
+let pinyinTimestamps = [];  // 儲存拼音音節的時間戳記
+let pinyinToLyricMappings = [];  // 儲存拼音到主歌詞的 mapping 關係
+let workflowPhase = 'INPUT';  // 'INPUT' | 'SYNC_PINYIN' | 'MAPPING' | 'COMPLETE'
+let mappingSelection = [];  // 拖曳選取的臨時陣列
+let mappingDragStart = null;  // 拖曳起始索引
+let mappingDragEnd = null;  // 拖曳結束索引
+
+// Group Mapping 變數（前置處理功能）
+let groupMappingState = {
+    currentLine: 0,
+    pinyinData: [],
+    lyricsData: [],
+    mappings: [],
+    selection: [],
+    pinyinFocus: 0,
+    lyricFocus: 0
+};
+let groupMappingKeyboardHandler = null;
 
 // 讀取歌詞
 let totalWordsInSong = 0;
@@ -123,38 +143,43 @@ function loadLyrics() {
     pinyinEnabled = document.getElementById("enablePinyin").checked;
 
     if (!inputText) {
-        alert("❌ 請輸入歌詞！");
+        alert("❌ 請輸入主歌詞！");
         return;
     }
 
-    // 將歌詞按行拆分並過濾空行
+    // 解析主歌詞（儲存供 mapping 用）
     lyrics = inputText.split("\n")
-        .map(line => parseLyricsLine(line)) // 解析 `[]` 並拆分詞組
-        .filter(line => line.length > 0); // 移除空行
+        .map(line => parseLyricsLine(line))
+        .filter(line => line.length > 0);
 
-    // 解析拼音（如果啟用）
-    if (pinyinEnabled && pinyinInput) {
-        let pinyinLines = pinyinInput.split("\n")
-            .map(line => parseLyricsLine(line))
-            .filter(line => line.length > 0);
-
-        // 驗證對齊
-        if (!checkAlignment(lyrics, pinyinLines)) {
-            alert("⚠️ 警告：拼音與主歌詞的字數不對齊！\n請檢查每行的分割結果。");
-            // 仍允許繼續，但顯示警告
-        }
-
-        pinyinLyrics = pinyinLines;
-    } else {
-        pinyinLyrics = [];
+    // 新模式：拼音優先
+    if (!pinyinEnabled || !pinyinInput) {
+        alert("❌ 新模式需要啟用拼音並輸入拼音內容！\n請勾選「啟用拼音」並在拼音欄位輸入音節（空格分隔）。");
+        return;
     }
 
-    totalWordsInSong = lyrics.reduce((sum, line) => sum + line.length, 0); // 計算總詞數
+    // 解析拼音（現在是主要同步目標）
+    pinyinLyrics = pinyinInput.split("\n")
+        .map(line => parseLyricsLine(line))
+        .filter(line => line.length > 0);
+
+    // 驗證行數對齊
+    if (lyrics.length !== pinyinLyrics.length) {
+        alert(`⚠️ 主歌詞有 ${lyrics.length} 行，拼音有 ${pinyinLyrics.length} 行，請檢查對齊！`);
+        return;
+    }
+
+    // 初始化新工作流程狀態
+    workflowPhase = 'SYNC_PINYIN';
+    pinyinTimestamps = [];
+    pinyinToLyricMappings = [];
+    timestamps = [];
     currentWordIndex = 0;
     currentLineIndex = 0;
+    totalWordsInSong = pinyinLyrics.reduce((sum, line) => sum + line.length, 0);
 
-    displayLyrics();
-    updateProgressBar(); // 確保進度條歸零
+    displayPinyinSyncInterface();
+    updateProgressBar();
 }
 
 // 檢查歌詞與拼音對齊
@@ -423,7 +448,7 @@ function getClickedLineIndex(textarea, event) {
     return mappedIndex !== -1 ? mappedIndex : null;
 }
 
-// **顯示當前行的 KTV 歌詞**
+// **顯示當前行的 KTV 歌詞（舊模式，保留作為備用）**
 function displayLyrics() {
     let displayArea = document.getElementById("lyricsDisplay");
 
@@ -445,6 +470,45 @@ function displayLyrics() {
         }).join("");
 
     updateLyricsStatus()
+}
+
+// **Phase 2: 顯示拼音同步介面（拼音為主，主歌詞為提示）**
+function displayPinyinSyncInterface() {
+    let container = document.getElementById("lyricsDisplay");
+    container.innerHTML = "";
+
+    if (pinyinLyrics.length === 0 || currentLineIndex >= pinyinLyrics.length) {
+        return;
+    }
+
+    // 顯示主歌詞作為小字提示
+    let mainLyricPreview = document.createElement("div");
+    mainLyricPreview.className = "main-lyric-preview";
+    mainLyricPreview.textContent = `主歌詞：${lyrics[currentLineIndex].join("")}`;
+    container.appendChild(mainLyricPreview);
+
+    // 顯示拼音音節（大字，可點擊）
+    let pinyinLine = document.createElement("div");
+    pinyinLine.className = "pinyin-line";
+    pinyinLyrics[currentLineIndex].forEach((syllable, idx) => {
+        let span = document.createElement("span");
+        span.id = `pinyin-${idx}`;
+        span.className = "pinyin-syllable";
+        span.textContent = syllable;
+
+        // 檢查是否已記錄
+        let recorded = pinyinTimestamps.find(p =>
+            p.line === currentLineIndex + 1 && p.syllableIndex === idx + 1
+        );
+        if (recorded) {
+            span.classList.add("highlight");
+        }
+
+        pinyinLine.appendChild(span);
+    });
+    container.appendChild(pinyinLine);
+
+    updateLyricsStatus();
 }
 
 // 轉換秒數格式
@@ -582,58 +646,99 @@ function parseTimeToSeconds(timeString) {
     }
 }
 
-function nextChar() {
-    if (currentWordIndex < lyrics[currentLineIndex].length) {
+// **Phase 2: 記錄拼音音節時間戳記**
+function nextPinyinSyllable() {
+    if (currentWordIndex < pinyinLyrics[currentLineIndex].length) {
         addButtonEffect("nextCharBtn");
         let currentTime = player.getCurrentTime();
         let startTime = formatTime(currentTime);
         let endTime = formatTime(currentTime + 1);
 
-        // 更新上一個字的結束時間
+        // 更新上一個音節的結束時間
         if (currentWordIndex > 0) {
-            let lastTimestamp = timestamps.find(t =>
-                t.line === currentLineIndex + 1 && t.wordIndex === currentWordIndex
-            );
-            if (lastTimestamp) {
-                lastTimestamp.end = startTime; // ✅ 更新上一個字的結束時間
+            let lastEntry = pinyinTimestamps[pinyinTimestamps.length - 1];
+            if (lastEntry) {
+                lastEntry.end = startTime;
             }
         }
 
-        // 取得當前字的拼音（如果有）
-        let currentPinyin = null;
-        if (pinyinEnabled && pinyinLyrics[currentLineIndex] &&
-            pinyinLyrics[currentLineIndex][currentWordIndex]) {
-            currentPinyin = pinyinLyrics[currentLineIndex][currentWordIndex];
-        }
-
-        // 記錄當前字的時間
-        let isLastWord = (currentWordIndex === lyrics[currentLineIndex].length - 1);
-        let newTimestamp = {
+        // 記錄當前拼音音節
+        let newEntry = {
             line: currentLineIndex + 1,
-            wordIndex: currentWordIndex + 1,  // ✅ 讓 wordIndex 從 1 開始
+            syllableIndex: currentWordIndex + 1,
             start: startTime,
-            end: isLastWord ? endTime : "",  // ✅ 如果是最後一個字，設定 endTime
-            word: lyrics[currentLineIndex][currentWordIndex],
-            pinyin: currentPinyin,  // ✅ 新增拼音欄位
-            role: currentRole  // ✅ 新增角色欄位
+            end: endTime,
+            syllable: pinyinLyrics[currentLineIndex][currentWordIndex],
+            role: currentRole,
+            mappedToWord: null
         };
 
-        // 推送時間紀錄
-        timestamps.push(newTimestamp);
+        pinyinTimestamps.push(newEntry);
 
-        // 讓當前字變色
-        document.getElementById(`word-${currentWordIndex}`).classList.add("highlight");
+        // 高亮當前音節
+        document.getElementById(`pinyin-${currentWordIndex}`).classList.add("highlight");
         currentWordIndex++;
-        updateTimestampsDisplay();
+        updatePinyinTimestampsDisplay();
 
-        // 按完最後一個字後自動換行
-        if (currentWordIndex >= lyrics[currentLineIndex].length) {
+        // 檢查是否完成所有行
+        if (allPinyinSynced()) {
+            promptEnterMappingPhase();
+        } else if (currentWordIndex >= pinyinLyrics[currentLineIndex].length) {
+            // 自動換行
             setTimeout(() => {
                 nextLine();
             }, 200);
         }
     }
     updateProgressBar();
+}
+
+// 檢查所有拼音是否已同步完成
+function allPinyinSynced() {
+    let totalPinyinSyllables = pinyinLyrics.reduce((sum, line) => sum + line.length, 0);
+    return pinyinTimestamps.length >= totalPinyinSyllables;
+}
+
+// 提示進入 Mapping 階段
+function promptEnterMappingPhase() {
+    alert("✅ 所有拼音已同步完成！\n\n接下來請進行拼音到主歌詞的 mapping。");
+    initializeMappingMode();
+}
+
+// 更新拼音時間戳記顯示
+function updatePinyinTimestampsDisplay() {
+    let tableBody = document.querySelector("#timestampsTable tbody");
+    tableBody.innerHTML = "";
+
+    pinyinTimestamps.forEach(p => {
+        let row = document.createElement("tr");
+        let roleDisplay = p.role ? ROLE_NAMES[p.role] || p.role : '-';
+
+        row.innerHTML = `
+            <td>${p.syllable}</td>
+            <td>${p.line}</td>
+            <td>${p.syllableIndex}</td>
+            <td>${p.start || "--:--:--"}</td>
+            <td>${p.end || "--:--:--"}</td>
+            <td>${roleDisplay}</td>
+        `;
+
+        tableBody.appendChild(row);
+    });
+
+    // 自動滾動到最新紀錄
+    let tableWrapper = document.querySelector(".table-wrapper");
+    if (tableWrapper) {
+        tableWrapper.scrollTop = tableWrapper.scrollHeight;
+    }
+}
+
+// 舊的 nextChar 函數（暫時保留用於向後相容，但已被 nextPinyinSyllable 取代）
+function nextChar() {
+    // 在新模式下，委派給 nextPinyinSyllable
+    if (workflowPhase === 'SYNC_PINYIN') {
+        nextPinyinSyllable();
+    }
 }
 
 function prevLine() {
@@ -759,13 +864,27 @@ function updateProgressBar() {
     let progressBar = document.getElementById("progressBar");
     if (!progressBar) return;
 
-    // 計算已紀錄的字數（每一行最後一個已紀錄的 wordIndex 加總）
-    let recordedWords = new Set();
-    timestamps.forEach(t => recordedWords.add(`${t.line}-${t.wordIndex}`)); // 避免重複計算
-    let recordedCount = recordedWords.size; // 取得已記錄的字數
+    let recordedCount = 0;
+    let totalCount = totalWordsInSong;
+
+    // 根據當前工作流程階段計算進度
+    if (workflowPhase === 'SYNC_PINYIN') {
+        // 拼音同步階段：基於已記錄的拼音音節數
+        recordedCount = pinyinTimestamps.length;
+        totalCount = pinyinLyrics.reduce((sum, line) => sum + line.length, 0);
+    } else if (workflowPhase === 'MAPPING') {
+        // Mapping 階段：基於已建立的 mapping 數量
+        recordedCount = pinyinToLyricMappings.length;
+        totalCount = lyrics.reduce((sum, line) => sum + line.length, 0);
+    } else {
+        // 舊模式或其他階段：基於 timestamps
+        let recordedWords = new Set();
+        timestamps.forEach(t => recordedWords.add(`${t.line}-${t.wordIndex}`));
+        recordedCount = recordedWords.size;
+    }
 
     // 計算進度
-    let percentage = totalWordsInSong > 0 ? (recordedCount / totalWordsInSong) * 100 : 0;
+    let percentage = totalCount > 0 ? (recordedCount / totalCount) * 100 : 0;
     progressBar.style.width = `${percentage}%`;
 }
 
@@ -876,7 +995,7 @@ function launchFireworks() {
 
     // 避免重複播放煙火
     if (fireworksContainer.classList.contains("active")) return;
-    
+
     // 🌙 啟動黑色半透明背景
     overlay.classList.add("active");
 
@@ -932,4 +1051,1086 @@ function launchFireworks() {
         fireworksContainer.classList.remove("active");
         overlay.classList.remove("active"); // 🌙 移除黑色背景
     }, 4000);
+}
+
+// ==============================================
+// Phase 3: Mapping UI Logic
+// ==============================================
+
+function initializeMappingMode() {
+    workflowPhase = 'MAPPING';
+    currentLineIndex = 0;
+
+    // 隱藏同步介面，顯示 mapping 介面
+    document.getElementById("lyricsContainer").style.display = "none";
+    let timestampsTable = document.getElementById("timestampsTable");
+    if (timestampsTable) {
+        timestampsTable.style.display = "none";
+    }
+
+    let mappingContainer = document.getElementById("mappingContainer");
+    if (mappingContainer) {
+        mappingContainer.style.display = "block";
+        displayMappingInterface();
+    }
+}
+
+let currentPinyinFocus = 0;  // 拼音區的焦點索引
+let currentLyricFocus = 0;   // 主歌詞區的焦點索引
+
+function displayMappingInterface() {
+    let mappingArea = document.getElementById("mappingArea");
+    if (!mappingArea) return;
+
+    let linePinyin = pinyinTimestamps.filter(p => p.line === currentLineIndex + 1);
+    let lineLyrics = lyrics[currentLineIndex];
+    let lineMappings = pinyinToLyricMappings.filter(m => m.line === currentLineIndex + 1);
+
+    // 檢查資料是否存在
+    if (!lineLyrics || lineLyrics.length === 0) {
+        console.error('找不到主歌詞資料', { currentLineIndex, lyrics });
+        mappingArea.innerHTML = '<div style="color: red; padding: 20px; text-align: center;">❌ 錯誤：找不到第 ' + (currentLineIndex + 1) + ' 行的主歌詞資料</div>';
+        return;
+    }
+
+    if (linePinyin.length === 0) {
+        console.error('找不到拼音資料', { currentLineIndex, pinyinTimestamps });
+        mappingArea.innerHTML = '<div style="color: red; padding: 20px; text-align: center;">❌ 錯誤：找不到第 ' + (currentLineIndex + 1) + ' 行的拼音資料</div>';
+        return;
+    }
+
+    // 確保焦點索引在有效範圍內
+    if (currentPinyinFocus >= linePinyin.length) {
+        currentPinyinFocus = Math.max(0, linePinyin.length - 1);
+    }
+    if (currentLyricFocus >= lineLyrics.length) {
+        currentLyricFocus = Math.max(0, lineLyrics.length - 1);
+    }
+
+    // 建立上下式連連看介面
+    mappingArea.innerHTML = `
+        <!-- 上方：拼音列表（橫向排列）-->
+        <div class="mapping-section">
+            <div class="section-title">拼音音節（方向鍵 ← → 移動，Space 選取/取消）</div>
+            <div class="pinyin-list-horizontal" id="pinyinList">
+                ${linePinyin.map((p, idx) => {
+                    let mappedClass = p.mappedToWord !== null ? 'mapped' : '';
+                    let selectedClass = mappingSelection.includes(idx) ? 'selected' : '';
+                    let focusClass = idx === currentPinyinFocus ? 'focused' : '';
+                    return `<div class="pinyin-item ${mappedClass} ${selectedClass} ${focusClass}" data-idx="${idx}">${p.syllable}</div>`;
+                }).join('')}
+            </div>
+        </div>
+
+        <!-- 中間：已建立的連結 -->
+        <div class="mapping-section">
+            <div class="section-title">已建立連結</div>
+            <div class="mappings-display" id="mappingsDisplay">
+                ${lineMappings.length === 0
+                    ? '<div style="color: #999; text-align: center; padding: 20px;">尚未建立</div>'
+                    : lineMappings.map((m, idx) => {
+                        let pinyinStr = m.pinyinSyllableIndices.map(pIdx =>
+                            linePinyin[pIdx - 1].syllable
+                        ).join('+');
+                        return `
+                            <div class="mapping-entry">
+                                <span class="pinyin-part">${pinyinStr}</span>
+                                <span class="arrow">→</span>
+                                <span class="lyric-part">${m.word}</span>
+                                <button class="delete-btn" onclick="deleteMapping(${idx})">刪除</button>
+                            </div>
+                        `;
+                    }).join('')
+                }
+            </div>
+        </div>
+
+        <!-- 下方：主歌詞列表（橫向排列）-->
+        <div class="mapping-section">
+            <div class="section-title">主歌詞（W D 移動，Enter 連結）</div>
+            <div class="lyrics-list-horizontal" id="lyricsList">
+                ${lineLyrics.map((word, idx) => {
+                    let mapped = lineMappings.find(m => m.wordIndex === idx + 1);
+                    let mappedClass = mapped ? 'mapped' : '';
+                    let focusClass = idx === currentLyricFocus ? 'focused' : '';
+                    return `<div class="lyric-item ${mappedClass} ${focusClass}" data-idx="${idx}">${word}</div>`;
+                }).join('')}
+            </div>
+        </div>
+    `;
+
+    // 附加點擊事件
+    attachMappingClickHandlers();
+
+    // 附加鍵盤事件
+    attachMappingKeyboardHandlers();
+
+    // 更新進度
+    updateMappingProgress();
+
+    // 更新鍵盤狀態提示
+    updateMappingKeyboardStatus();
+}
+
+// 連連看式點擊處理
+function attachMappingClickHandlers() {
+    // 拼音項目點擊事件（多選）
+    document.querySelectorAll('.pinyin-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (item.classList.contains('mapped')) return;
+
+            let idx = parseInt(item.dataset.idx);
+
+            if (item.classList.contains('selected')) {
+                // 取消選取
+                item.classList.remove('selected');
+                mappingSelection = mappingSelection.filter(i => i !== idx);
+            } else {
+                // 選取
+                item.classList.add('selected');
+                mappingSelection.push(idx);
+                mappingSelection.sort((a, b) => a - b);
+            }
+
+            updateMappingKeyboardStatus();
+        });
+    });
+
+    // 主歌詞項目點擊事件（建立連結）
+    document.querySelectorAll('.lyric-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (item.classList.contains('mapped')) {
+                alert('這個字已經被連結過了！');
+                return;
+            }
+
+            if (mappingSelection.length === 0) {
+                alert('請先選取拼音音節！');
+                return;
+            }
+
+            let lyricIdx = parseInt(item.dataset.idx);
+            let lyricText = item.textContent;
+
+            // 取得選取的拼音
+            let linePinyin = pinyinTimestamps.filter(p => p.line === currentLineIndex + 1);
+            let selectedPinyin = mappingSelection.map(idx => linePinyin[idx]);
+
+            // 檢查是否已被 mapping
+            let alreadyMapped = selectedPinyin.some(p => p.mappedToWord !== null);
+            if (alreadyMapped) {
+                alert("選取的拼音中有些已經被 mapping 過了！");
+                return;
+            }
+
+            // 建立 mapping
+            let mapping = {
+                line: currentLineIndex + 1,
+                wordIndex: lyricIdx + 1,
+                word: lyricText,
+                pinyinSyllableIndices: mappingSelection.map(idx => idx + 1),
+                start: selectedPinyin[0].start,
+                end: selectedPinyin[selectedPinyin.length - 1].end,
+                role: selectedPinyin[0].role
+            };
+
+            pinyinToLyricMappings.push(mapping);
+
+            // 標記為已 mapped
+            selectedPinyin.forEach(p => {
+                p.mappedToWord = mapping.wordIndex;
+            });
+
+            // 清空選取
+            mappingSelection = [];
+
+            // 重新顯示介面
+            displayMappingInterface();
+        });
+    });
+}
+
+function clearSelection() {
+    document.querySelectorAll('.pinyin-item.selected').forEach(item => {
+        item.classList.remove('selected');
+    });
+    mappingSelection = [];
+    displayMappingInterface();
+    updateMappingKeyboardStatus();
+}
+
+function updateMappingStatus() {
+    // 更新狀態提示（可選）
+    // 可在未來新增狀態欄位顯示目前選取的拼音
+}
+
+// 鍵盤操作處理
+let mappingKeyboardListener = null;
+
+function attachMappingKeyboardHandlers() {
+    // 移除舊的監聽器
+    if (mappingKeyboardListener) {
+        document.removeEventListener('keydown', mappingKeyboardListener);
+    }
+
+    mappingKeyboardListener = (e) => {
+        // 只在 MAPPING 階段處理鍵盤事件
+        if (workflowPhase !== 'MAPPING') return;
+
+        let linePinyin = pinyinTimestamps.filter(p => p.line === currentLineIndex + 1);
+        let lineLyrics = lyrics[currentLineIndex];
+        let handled = false;
+
+        // 拼音區操作：方向鍵左右
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            if (currentPinyinFocus > 0) {
+                currentPinyinFocus--;
+                displayMappingInterface();
+            }
+            handled = true;
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            if (currentPinyinFocus < linePinyin.length - 1) {
+                currentPinyinFocus++;
+                displayMappingInterface();
+            }
+            handled = true;
+        }
+        // 拼音區選取：Space
+        else if (e.key === ' ' && !e.shiftKey) {
+            e.preventDefault();
+            let pinyinItem = linePinyin[currentPinyinFocus];
+
+            // 檢查是否已被 mapping
+            if (pinyinItem.mappedToWord !== null) {
+                return;
+            }
+
+            let idx = currentPinyinFocus;
+            if (mappingSelection.includes(idx)) {
+                // 取消選取
+                mappingSelection = mappingSelection.filter(i => i !== idx);
+            } else {
+                // 選取
+                mappingSelection.push(idx);
+                mappingSelection.sort((a, b) => a - b);
+            }
+            displayMappingInterface();
+            handled = true;
+        }
+        // 主歌詞區操作：W (左) D (右)
+        else if (e.key.toLowerCase() === 'w' || e.key.toLowerCase() === 'a') {
+            e.preventDefault();
+            if (currentLyricFocus > 0) {
+                currentLyricFocus--;
+                displayMappingInterface();
+            }
+            handled = true;
+        } else if (e.key.toLowerCase() === 'd') {
+            e.preventDefault();
+            if (currentLyricFocus < lineLyrics.length - 1) {
+                currentLyricFocus++;
+                displayMappingInterface();
+            }
+            handled = true;
+        }
+        // 主歌詞區連結：Enter
+        else if (e.key === 'Enter') {
+            e.preventDefault();
+            connectMappingAtFocus();
+            handled = true;
+        }
+        // 清除選取：Escape
+        else if (e.key === 'Escape') {
+            e.preventDefault();
+            clearSelection();
+            handled = true;
+        }
+
+        if (handled) {
+            // 阻止預設行為已在上面處理
+        }
+    };
+
+    document.addEventListener('keydown', mappingKeyboardListener);
+}
+
+// 更新鍵盤操作狀態提示
+function updateMappingKeyboardStatus() {
+    let statusElem = document.getElementById('mappingKeyboardStatus');
+    if (!statusElem) return;
+
+    let linePinyin = pinyinTimestamps.filter(p => p.line === currentLineIndex + 1);
+    let lineLyrics = lyrics[currentLineIndex];
+
+    let pinyinFocusText = currentPinyinFocus < linePinyin.length
+        ? `拼音焦點: ${linePinyin[currentPinyinFocus].syllable} [${currentPinyinFocus}]`
+        : `拼音焦點: - [${currentPinyinFocus}]`;
+
+    let lyricFocusText = currentLyricFocus < lineLyrics.length
+        ? `主歌詞焦點: ${lineLyrics[currentLyricFocus]} [${currentLyricFocus}]`
+        : `主歌詞焦點: - [${currentLyricFocus}]`;
+
+    if (mappingSelection.length > 0) {
+        let selectedText = mappingSelection
+            .map(idx => linePinyin[idx]?.syllable || '?')
+            .join(' + ');
+        statusElem.textContent = `${pinyinFocusText} | ${lyricFocusText} | 已選取: ${selectedText}`;
+    } else {
+        statusElem.textContent = `${pinyinFocusText} | ${lyricFocusText}`;
+    }
+}
+
+// 在焦點位置建立連結
+function connectMappingAtFocus() {
+    let linePinyin = pinyinTimestamps.filter(p => p.line === currentLineIndex + 1);
+    let lineLyrics = lyrics[currentLineIndex];
+    let lineMappings = pinyinToLyricMappings.filter(m => m.line === currentLineIndex + 1);
+
+    // 檢查主歌詞是否已被 mapping
+    let mapped = lineMappings.find(m => m.wordIndex === currentLyricFocus + 1);
+    if (mapped) {
+        alert('這個字已經被連結過了！');
+        return;
+    }
+
+    // 檢查是否有選取拼音
+    if (mappingSelection.length === 0) {
+        alert('請先選取拼音音節！');
+        return;
+    }
+
+    let lyricText = lineLyrics[currentLyricFocus];
+    let selectedPinyin = mappingSelection.map(idx => linePinyin[idx]);
+
+    // 檢查是否已被 mapping
+    let alreadyMapped = selectedPinyin.some(p => p.mappedToWord !== null);
+    if (alreadyMapped) {
+        alert("選取的拼音中有些已經被 mapping 過了！");
+        return;
+    }
+
+    // 建立 mapping
+    let mapping = {
+        line: currentLineIndex + 1,
+        wordIndex: currentLyricFocus + 1,
+        word: lyricText,
+        pinyinSyllableIndices: mappingSelection.map(idx => idx + 1),
+        start: selectedPinyin[0].start,
+        end: selectedPinyin[selectedPinyin.length - 1].end,
+        role: selectedPinyin[0].role
+    };
+
+    pinyinToLyricMappings.push(mapping);
+
+    // 標記為已 mapped
+    selectedPinyin.forEach(p => {
+        p.mappedToWord = mapping.wordIndex;
+    });
+
+    // 清空選取
+    mappingSelection = [];
+
+    // 自動移到下一個主歌詞字
+    if (currentLyricFocus < lineLyrics.length - 1) {
+        currentLyricFocus++;
+    }
+
+    // 重新顯示介面
+    displayMappingInterface();
+}
+
+function deleteMapping(mappingIdx) {
+    let lineMappings = pinyinToLyricMappings.filter(m => m.line === currentLineIndex + 1);
+    let mapping = lineMappings[mappingIdx];
+
+    // 解除 mapped 標記
+    let linePinyin = pinyinTimestamps.filter(p => p.line === currentLineIndex + 1);
+    mapping.pinyinSyllableIndices.forEach(pIdx => {
+        let pinyinEntry = linePinyin[pIdx - 1];
+        if (pinyinEntry) pinyinEntry.mappedToWord = null;
+    });
+
+    // 移除 mapping
+    pinyinToLyricMappings = pinyinToLyricMappings.filter(m => m !== mapping);
+
+    displayMappingInterface();
+}
+
+function undoLastMapping() {
+    let lineMappings = pinyinToLyricMappings.filter(m => m.line === currentLineIndex + 1);
+    if (lineMappings.length === 0) {
+        alert("目前這行沒有可復原的 mapping！");
+        return;
+    }
+
+    deleteMapping(lineMappings.length - 1);
+}
+
+function nextMappingLine() {
+    if (currentLineIndex < lyrics.length - 1) {
+        currentLineIndex++;
+        displayMappingInterface();
+    }
+}
+
+function prevMappingLine() {
+    if (currentLineIndex > 0) {
+        currentLineIndex--;
+        displayMappingInterface();
+    }
+}
+
+function updateMappingProgress() {
+    let statusElem = document.getElementById('mappingStatus');
+    let completenessElem = document.getElementById('mappingCompleteness');
+
+    if (statusElem) {
+        statusElem.textContent = `第 ${currentLineIndex + 1} 行 / 共 ${lyrics.length} 行`;
+    }
+
+    if (completenessElem) {
+        let totalMapped = pinyinToLyricMappings.length;
+        let totalWords = lyrics.reduce((sum, line) => sum + line.length, 0);
+        completenessElem.textContent = `已完成 ${totalMapped} 字 / 共 ${totalWords} 字`;
+    }
+}
+
+// ==============================================
+// Validation & Export
+// ==============================================
+
+function validateAndExport() {
+    let validation = validateAllMappings();
+
+    if (!validation.valid) {
+        alert(`❌ 無法匯出：\n\n第 ${validation.lineNumber} 行有問題：\n${validation.error}`);
+
+        // 跳轉到錯誤行
+        currentLineIndex = validation.lineNumber - 1;
+        displayMappingInterface();
+        return;
+    }
+
+    alert("✅ 驗證通過！開始匯出...");
+    generateFinalTimestamps();
+    exportTimestamps();
+}
+
+function validateAllMappings() {
+    for (let lineIdx = 0; lineIdx < lyrics.length; lineIdx++) {
+        let linePinyin = pinyinTimestamps.filter(p => p.line === lineIdx + 1);
+        let lineMappings = pinyinToLyricMappings.filter(m => m.line === lineIdx + 1);
+
+        // 檢查 1: 所有拼音都必須被 mapping
+        let unmapped = linePinyin.filter(p => p.mappedToWord === null);
+        if (unmapped.length > 0) {
+            return {
+                valid: false,
+                lineNumber: lineIdx + 1,
+                error: `還有 ${unmapped.length} 個拼音音節未 mapping：${unmapped.map(p => p.syllable).join(', ')}`
+            };
+        }
+
+        // 檢查 2: mapping 的字數要與主歌詞一致
+        let expectedWords = lyrics[lineIdx].length;
+        let mappedWords = lineMappings.length;
+        if (mappedWords !== expectedWords) {
+            return {
+                valid: false,
+                lineNumber: lineIdx + 1,
+                error: `主歌詞有 ${expectedWords} 字，但只 mapping 了 ${mappedWords} 字`
+            };
+        }
+    }
+
+    return { valid: true };
+}
+
+function generateFinalTimestamps() {
+    timestamps = [];
+
+    pinyinToLyricMappings.forEach(mapping => {
+        // 重建拼音字串
+        let linePinyin = pinyinTimestamps.filter(p => p.line === mapping.line);
+        let pinyinStr = mapping.pinyinSyllableIndices.map(idx => {
+            return linePinyin[idx - 1].syllable;
+        }).join(' ');
+
+        timestamps.push({
+            line: mapping.line,
+            wordIndex: mapping.wordIndex,
+            start: mapping.start,
+            end: mapping.end,
+            word: mapping.word,
+            pinyin: pinyinStr,
+            role: mapping.role
+        });
+    });
+
+    // 排序
+    timestamps.sort((a, b) =>
+        a.line === b.line ? a.wordIndex - b.wordIndex : a.line - b.line
+    );
+}
+
+// ==============================================
+// Group Mapping Feature (Pre-Processing)
+// ==============================================
+
+// ========== Dialog Lifecycle ==========
+
+function openGroupMappingDialog() {
+    // Check if there are existing mappings
+    if (pinyinToLyricMappings && pinyinToLyricMappings.length > 0) {
+        if (!confirm("偵測到已有群組 mapping 紀錄。\n\n重新開始會清除之前的 mapping，是否繼續？")) {
+            return;
+        }
+    }
+
+    // Prepare data
+    let data = prepareGroupMappingData();
+    if (!data) return;
+
+    // Initialize state
+    groupMappingState.currentLine = 0;
+    groupMappingState.pinyinData = data.pinyinLines;
+    groupMappingState.lyricsData = data.lyricsLines;
+    groupMappingState.mappings = [];
+    groupMappingState.selection = [];
+    groupMappingState.pinyinFocus = 0;
+    groupMappingState.lyricFocus = 0;
+
+    // Render interface
+    renderGroupMappingInterface();
+
+    // Show dialog
+    let dialog = document.getElementById("groupMappingDialog");
+    dialog.showModal();
+
+    // Attach keyboard handlers
+    attachGroupMappingKeyboardHandlers();
+}
+
+function closeGroupMappingDialog() {
+    // Check if there are unsaved mappings
+    if (groupMappingState.mappings.length > 0) {
+        if (!confirm("您有未儲存的 mapping 紀錄。\n\n關閉視窗將會遺失這些紀錄，是否繼續？")) {
+            return;
+        }
+    }
+
+    let dialog = document.getElementById("groupMappingDialog");
+    dialog.close();
+    removeGroupMappingKeyboardHandlers();
+}
+
+// ========== Data Parsing ==========
+
+function prepareGroupMappingData() {
+    let pinyinInput = document.getElementById("pinyinInput").value.trim();
+    let lyricsInput = document.getElementById("lyricsInput").value.trim();
+
+    if (!pinyinInput) {
+        alert("❌ 請先輸入拼音！");
+        return null;
+    }
+
+    if (!lyricsInput) {
+        alert("❌ 請先輸入主歌詞！");
+        return null;
+    }
+
+    // Parse both inputs line by line
+    let pinyinLines = pinyinInput.split("\n")
+        .map(line => parsePinyinLineForGrouping(line))
+        .filter(line => line.length > 0);
+
+    let lyricsLines = lyricsInput.split("\n")
+        .map(line => parseLyricsLine(line))
+        .filter(line => line.length > 0);
+
+    // Validate line count
+    if (pinyinLines.length !== lyricsLines.length) {
+        alert(`❌ 行數不對齊！\n拼音：${pinyinLines.length} 行\n主歌詞：${lyricsLines.length} 行`);
+        return null;
+    }
+
+    // Debug: log the data
+    console.log('Prepared data:', {
+        pinyinLines: pinyinLines,
+        lyricsLines: lyricsLines
+    });
+
+    return {
+        pinyinLines: pinyinLines,
+        lyricsLines: lyricsLines,
+        lineCount: pinyinLines.length
+    };
+}
+
+function parsePinyinLineForGrouping(line) {
+    // Remove existing [] groups first
+    let cleaned = line.replace(/\[([^\]]+)\]/g, (_match, group) => {
+        return group.trim();
+    });
+
+    // Use parseLyricsLine to handle / and automatic segmentation
+    return parseLyricsLine(cleaned);
+}
+
+// ========== Interface Rendering ==========
+
+function renderGroupMappingInterface() {
+    let container = document.getElementById("groupMappingArea");
+    let line = groupMappingState.currentLine;
+    let pinyinList = groupMappingState.pinyinData[line];
+    let lyricsList = groupMappingState.lyricsData[line];
+    let lineMappings = groupMappingState.mappings.filter(m => m.line === line);
+
+    // Debug
+    console.log('Rendering line:', line);
+    console.log('Pinyin list:', pinyinList);
+    console.log('Lyrics list:', lyricsList);
+
+    // Render pinyin list
+    let pinyinHTML = pinyinList.map((syllable, idx) => {
+        let classes = ['pinyin-item'];
+        if (idx === groupMappingState.pinyinFocus) classes.push('focused');
+        if (groupMappingState.selection.includes(idx)) classes.push('selected');
+        if (isMappedPinyin(line, idx)) classes.push('mapped');
+        return `<div class="${classes.join(' ')}" data-idx="${idx}">${syllable}</div>`;
+    }).join('');
+
+    // Render lyrics list with color indicators
+    let lyricsHTML = lyricsList.map((char, idx) => {
+        let classes = ['lyric-item'];
+        if (idx === groupMappingState.lyricFocus) classes.push('focused');
+
+        // Check if this lyric is mapped
+        let mapping = lineMappings.find(m => m.lyricIdx === idx);
+        if (mapping) {
+            classes.push('mapped');
+            // Add pinyin annotation on top
+            let pinyinAnnotation = `<div class="lyric-pinyin-annotation">${mapping.pinyin}</div>`;
+            return `<div class="${classes.join(' ')}" data-idx="${idx}">${pinyinAnnotation}<div class="lyric-char">${char}</div></div>`;
+        }
+
+        return `<div class="${classes.join(' ')}" data-idx="${idx}">${char}</div>`;
+    }).join('');
+
+    // Progress info
+    let progressHTML = getMappingProgress(line);
+
+    container.innerHTML = `
+        <!-- 上方：拼音列表 -->
+        <div class="mapping-section">
+            <div class="section-title">拼音音節（← → 移動，Space 選取/取消）</div>
+            <div class="pinyin-list-horizontal">
+                ${pinyinHTML}
+            </div>
+        </div>
+
+        <!-- 下方：主歌詞列表（帶有拼音標註）-->
+        <div class="mapping-section">
+            <div class="section-title">主歌詞（W/A 左移，D 右移，Enter 連結 | Backspace 刪除上一個）</div>
+            <div class="lyrics-list-horizontal">
+                ${lyricsHTML}
+            </div>
+        </div>
+
+        <!-- 進度提示 -->
+        <div class="mapping-progress">
+            ${progressHTML}
+        </div>
+    `;
+
+    // Attach click handlers
+    attachGroupMappingClickHandlers();
+}
+
+function renderLineMappings(mappings) {
+    if (mappings.length === 0) {
+        return '<div class="mappings-display-empty">尚未建立連結</div>';
+    }
+
+    return mappings.map((m) => {
+        // Find the global index for this mapping
+        let globalIdx = groupMappingState.mappings.indexOf(m);
+        return `
+            <div class="mapping-entry">
+                <span class="pinyin-part">${m.pinyin}</span>
+                <span class="arrow">→</span>
+                <span class="lyric-part">${m.lyric}</span>
+                <button class="delete-btn" onclick="deleteGroupMapping(${globalIdx})">刪除</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function getMappingProgress(line) {
+    let pinyinList = groupMappingState.pinyinData[line];
+    let lyricsList = groupMappingState.lyricsData[line];
+    let lineMappings = groupMappingState.mappings.filter(m => m.line === line);
+
+    let mappedPinyin = new Set();
+    lineMappings.forEach(m => {
+        m.pinyinIndices.forEach(idx => mappedPinyin.add(idx));
+    });
+
+    let mappedLyrics = new Set(lineMappings.map(m => m.lyricIdx));
+
+    let lineInfo = `<span>第 ${line + 1} 行 / 共 ${groupMappingState.pinyinData.length} 行</span>`;
+    let completeness = `<span>拼音：${mappedPinyin.size}/${pinyinList.length} | 主歌詞：${mappedLyrics.size}/${lyricsList.length}</span>`;
+
+    return lineInfo + completeness;
+}
+
+// ========== Helper Functions ==========
+
+function isMappedPinyin(line, idx) {
+    return groupMappingState.mappings.some(m =>
+        m.line === line && m.pinyinIndices.includes(idx)
+    );
+}
+
+function isMappedLyric(line, idx) {
+    return groupMappingState.mappings.some(m =>
+        m.line === line && m.lyricIdx === idx
+    );
+}
+
+// ========== Interaction Logic ==========
+
+function attachGroupMappingKeyboardHandlers() {
+    groupMappingKeyboardHandler = (e) => {
+        let line = groupMappingState.currentLine;
+        let pinyinList = groupMappingState.pinyinData[line];
+        let lyricsList = groupMappingState.lyricsData[line];
+
+        // Pinyin navigation: ← →
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            if (groupMappingState.pinyinFocus > 0) {
+                groupMappingState.pinyinFocus--;
+                renderGroupMappingInterface();
+            }
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            if (groupMappingState.pinyinFocus < pinyinList.length - 1) {
+                groupMappingState.pinyinFocus++;
+                renderGroupMappingInterface();
+            }
+        }
+        // Pinyin selection: Space
+        else if (e.key === ' ') {
+            e.preventDefault();
+            togglePinyinSelection(groupMappingState.pinyinFocus);
+
+            // Auto-advance to next pinyin after selection
+            if (groupMappingState.pinyinFocus < pinyinList.length - 1) {
+                groupMappingState.pinyinFocus++;
+                renderGroupMappingInterface();
+            }
+        }
+        // Lyric navigation: W/A (left), D (right)
+        else if (e.key.toLowerCase() === 'w' || e.key.toLowerCase() === 'a') {
+            e.preventDefault();
+            if (groupMappingState.lyricFocus > 0) {
+                groupMappingState.lyricFocus--;
+                renderGroupMappingInterface();
+            }
+        } else if (e.key.toLowerCase() === 'd') {
+            e.preventDefault();
+            if (groupMappingState.lyricFocus < lyricsList.length - 1) {
+                groupMappingState.lyricFocus++;
+                renderGroupMappingInterface();
+            }
+        }
+        // Create mapping: Enter
+        else if (e.key === 'Enter') {
+            e.preventDefault();
+            createGroupMapping();
+        }
+        // Delete last mapping: Backspace
+        else if (e.key === 'Backspace') {
+            e.preventDefault();
+            deleteLastGroupMapping();
+        }
+        // Clear selection or close: Escape
+        else if (e.key === 'Escape') {
+            e.preventDefault();
+            if (groupMappingState.selection.length > 0) {
+                groupMappingState.selection = [];
+                renderGroupMappingInterface();
+            } else {
+                // Don't close automatically, let user click cancel button
+            }
+        }
+    };
+
+    document.addEventListener('keydown', groupMappingKeyboardHandler);
+}
+
+function removeGroupMappingKeyboardHandlers() {
+    if (groupMappingKeyboardHandler) {
+        document.removeEventListener('keydown', groupMappingKeyboardHandler);
+        groupMappingKeyboardHandler = null;
+    }
+}
+
+function attachGroupMappingClickHandlers() {
+    // Pinyin items
+    document.querySelectorAll('.pinyin-item').forEach(item => {
+        item.addEventListener('click', () => {
+            let idx = parseInt(item.dataset.idx);
+            if (!item.classList.contains('mapped')) {
+                togglePinyinSelection(idx);
+            }
+        });
+    });
+
+    // Lyric items
+    document.querySelectorAll('.lyric-item').forEach(item => {
+        item.addEventListener('click', () => {
+            let idx = parseInt(item.dataset.idx);
+            if (!item.classList.contains('mapped')) {
+                groupMappingState.lyricFocus = idx;
+                createGroupMapping();
+            }
+        });
+    });
+}
+
+function togglePinyinSelection(idx) {
+    let line = groupMappingState.currentLine;
+
+    // Check if already mapped
+    if (isMappedPinyin(line, idx)) return;
+
+    let selection = groupMappingState.selection;
+    let position = selection.indexOf(idx);
+
+    if (position !== -1) {
+        // Remove selection
+        selection.splice(position, 1);
+    } else {
+        // Add selection
+        selection.push(idx);
+        selection.sort((a, b) => a - b);
+    }
+
+    renderGroupMappingInterface();
+}
+
+function createGroupMapping() {
+    let line = groupMappingState.currentLine;
+    let lyricIdx = groupMappingState.lyricFocus;
+    let selection = groupMappingState.selection;
+
+    // Validation
+    if (selection.length === 0) {
+        alert("請先選取拼音音節！");
+        return;
+    }
+
+    if (isMappedLyric(line, lyricIdx)) {
+        alert("這個字已經被連結過了！");
+        return;
+    }
+
+    // Check if selected pinyin already mapped
+    let alreadyMapped = selection.some(idx => isMappedPinyin(line, idx));
+    if (alreadyMapped) {
+        alert("選取的拼音中有些已經被 mapping 過了！");
+        return;
+    }
+
+    // Create mapping
+    let pinyinList = groupMappingState.pinyinData[line];
+    let lyricsList = groupMappingState.lyricsData[line];
+
+    let mapping = {
+        line: line,
+        pinyinIndices: [...selection],
+        lyricIdx: lyricIdx,
+        pinyin: selection.map(idx => pinyinList[idx]).join(' '),
+        lyric: lyricsList[lyricIdx]
+    };
+
+    groupMappingState.mappings.push(mapping);
+
+    // Clear selection
+    groupMappingState.selection = [];
+
+    // Auto-advance to next lyric
+    if (groupMappingState.lyricFocus < lyricsList.length - 1) {
+        groupMappingState.lyricFocus++;
+    }
+
+    renderGroupMappingInterface();
+}
+
+function deleteGroupMapping(globalIdx) {
+    groupMappingState.mappings.splice(globalIdx, 1);
+    renderGroupMappingInterface();
+}
+
+function deleteLastGroupMapping() {
+    let line = groupMappingState.currentLine;
+    let lineMappings = groupMappingState.mappings.filter(m => m.line === line);
+
+    if (lineMappings.length === 0) {
+        return; // No mappings to delete
+    }
+
+    // Find the last mapping for this line
+    let lastMapping = lineMappings[lineMappings.length - 1];
+    let globalIdx = groupMappingState.mappings.indexOf(lastMapping);
+
+    // Delete it
+    groupMappingState.mappings.splice(globalIdx, 1);
+
+    // Move lyric focus to the deleted mapping position
+    groupMappingState.lyricFocus = lastMapping.lyricIdx;
+
+    renderGroupMappingInterface();
+}
+
+// ========== Line Navigation ==========
+
+function nextGroupMappingLine() {
+    if (groupMappingState.currentLine >= groupMappingState.pinyinData.length - 1) {
+        return;
+    }
+
+    let validation = validateLineMapping(groupMappingState.currentLine);
+    if (!validation.complete) {
+        if (!confirm(`第 ${groupMappingState.currentLine + 1} 行尚未完成 mapping：\n${validation.message}\n\n是否仍要繼續到下一行？`)) {
+            return;
+        }
+    }
+
+    groupMappingState.currentLine++;
+    groupMappingState.selection = [];
+    groupMappingState.pinyinFocus = 0;
+    groupMappingState.lyricFocus = 0;
+    renderGroupMappingInterface();
+}
+
+function prevGroupMappingLine() {
+    if (groupMappingState.currentLine <= 0) {
+        return;
+    }
+
+    groupMappingState.currentLine--;
+    groupMappingState.selection = [];
+    groupMappingState.pinyinFocus = 0;
+    groupMappingState.lyricFocus = 0;
+    renderGroupMappingInterface();
+}
+
+function validateLineMapping(line) {
+    let pinyinList = groupMappingState.pinyinData[line];
+    let lyricsList = groupMappingState.lyricsData[line];
+    let lineMappings = groupMappingState.mappings.filter(m => m.line === line);
+
+    // Check all pinyin mapped
+    let mappedPinyin = new Set();
+    lineMappings.forEach(m => {
+        m.pinyinIndices.forEach(idx => mappedPinyin.add(idx));
+    });
+
+    if (mappedPinyin.size < pinyinList.length) {
+        return {
+            complete: false,
+            message: `還有 ${pinyinList.length - mappedPinyin.size} 個拼音音節未 mapping`
+        };
+    }
+
+    // Check all lyrics mapped
+    let mappedLyrics = new Set(lineMappings.map(m => m.lyricIdx));
+    if (mappedLyrics.size < lyricsList.length) {
+        return {
+            complete: false,
+            message: `還有 ${lyricsList.length - mappedLyrics.size} 個主歌詞字元未 mapping`
+        };
+    }
+
+    return { complete: true };
+}
+
+// ========== Data Output ==========
+
+function generateGroupedPinyinText() {
+    let result = [];
+
+    for (let lineIdx = 0; lineIdx < groupMappingState.pinyinData.length; lineIdx++) {
+        let lineMappings = groupMappingState.mappings
+            .filter(m => m.line === lineIdx)
+            .sort((a, b) => a.lyricIdx - b.lyricIdx);
+
+        if (lineMappings.length === 0) {
+            // No mappings for this line, return original
+            result.push(groupMappingState.pinyinData[lineIdx].join(' '));
+            continue;
+        }
+
+        let lineGroups = lineMappings.map(m => {
+            let syllables = m.pinyinIndices.map(idx =>
+                groupMappingState.pinyinData[lineIdx][idx]
+            );
+
+            // If multiple syllables, wrap in []
+            if (syllables.length > 1) {
+                return `[${syllables.join(' ')}]`;
+            } else {
+                return syllables[0];
+            }
+        });
+
+        result.push(lineGroups.join(' '));
+    }
+
+    return result.join('\n');
+}
+
+function saveGroupMappings() {
+    // Validate all lines
+    let incomplete = [];
+    for (let i = 0; i < groupMappingState.pinyinData.length; i++) {
+        let validation = validateLineMapping(i);
+        if (!validation.complete) {
+            incomplete.push(`第 ${i + 1} 行：${validation.message}`);
+        }
+    }
+
+    if (incomplete.length > 0) {
+        if (!confirm(`以下行尚未完成 mapping：\n\n${incomplete.join('\n')}\n\n是否仍要儲存？（未完成的行不會套用群組語法）`)) {
+            return;
+        }
+    }
+
+    // Generate grouped text
+    let groupedText = generateGroupedPinyinText();
+
+    // Update pinyinInput textarea
+    document.getElementById("pinyinInput").value = groupedText;
+
+    // Store mappings in global variable (convert to 1-based for consistency)
+    pinyinToLyricMappings = groupMappingState.mappings.map(m => ({
+        ...m,
+        line: m.line + 1,
+        lyricIdx: m.lyricIdx + 1, // Convert to 1-based
+        wordIndex: m.lyricIdx + 1
+    }));
+
+    // Show success message
+    alert("✅ 拼音群組已儲存到輸入欄位！\n\n拼音已更新為群組格式，請確認結果。");
+
+    // Close dialog
+    let dialog = document.getElementById("groupMappingDialog");
+    dialog.close();
+    removeGroupMappingKeyboardHandlers();
 }
