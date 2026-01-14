@@ -461,6 +461,37 @@ function nextPinyinSyllable() {
     updateProgressBar();
 }
 
+// 換到下一行（需根據工作流程選擇正確的顯示函數）
+function nextLine() {
+    if (currentLineIndex < lyrics.length - 1) {
+        currentLineIndex++;
+        currentWordIndex = 0;
+
+        // 根據工作流程階段選擇正確的顯示函數
+        if (workflowPhase === 'SYNC_PINYIN') {
+            displayPinyinSyncInterface();
+        } else {
+            displayLyrics();
+        }
+    }
+}
+
+// 顯示歌詞（非拼音模式）
+function displayLyrics() {
+    const display = document.getElementById('lyricsDisplay');
+    if (!display) return;
+
+    const currentLineLyrics = lyrics[currentLineIndex] || [];
+    let html = '<div class="lyrics-line">';
+    currentLineLyrics.forEach((char, idx) => {
+        const isActive = idx === currentWordIndex;
+        const isCompleted = idx < currentWordIndex;
+        html += `<span class="lyrics-char ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}">${char}</span>`;
+    });
+    html += '</div>';
+    display.innerHTML = html;
+}
+
 function validateAllMappings() {
     for (let lineIdx = 0; lineIdx < lyrics.length; lineIdx++) {
         let linePinyin = pinyinTimestamps.filter(p => p.line === lineIdx + 1);
@@ -1034,6 +1065,60 @@ describe('Maker Workflow Integration Tests', () => {
 
             test('should format 125.75 as 02:05:75', () => {
                 expect(formatTime(125.75)).toBe('02:05:75');
+            });
+        });
+
+        describe('nextLine() in SYNC_PINYIN phase', () => {
+            beforeEach(() => {
+                lyrics = [['你', '好'], ['世', '界']];
+                pinyinLyrics = [['ni', 'hao'], ['shi', 'jie']];
+                workflowPhase = 'SYNC_PINYIN';
+                currentLineIndex = 0;
+                currentWordIndex = 0;
+                pinyinTimestamps = [];
+            });
+
+            test('should call displayPinyinSyncInterface in SYNC_PINYIN phase', () => {
+                // Act
+                nextLine();
+
+                // Assert
+                expect(currentLineIndex).toBe(1);
+                const pinyinRow = document.querySelector('.pinyin-row');
+                expect(pinyinRow).not.toBeNull();
+                expect(pinyinRow.textContent).toContain('shi');
+            });
+
+            test('should call displayLyrics in INPUT phase', () => {
+                // Arrange
+                workflowPhase = 'INPUT';
+
+                // Act
+                nextLine();
+
+                // Assert
+                expect(currentLineIndex).toBe(1);
+                const pinyinRow = document.querySelector('.pinyin-row');
+                expect(pinyinRow).toBeNull(); // 不應該有拼音介面
+                const lyricsLine = document.querySelector('.lyrics-line');
+                expect(lyricsLine).not.toBeNull(); // 應該有歌詞介面
+            });
+
+            test('should display second line pinyin interface after completing first line', () => {
+                // Arrange - Mock player time
+                player.getCurrentTime.mockReturnValue(5.0);
+
+                // Act - Complete first line (2 syllables)
+                nextPinyinSyllable(); // ni
+                player.getCurrentTime.mockReturnValue(5.5);
+                nextPinyinSyllable(); // hao - should auto advance
+
+                // Assert - Should now show second line
+                expect(currentLineIndex).toBe(1);
+                const pinyinRow = document.querySelector('.pinyin-row');
+                expect(pinyinRow).not.toBeNull();
+                expect(pinyinRow.textContent).toContain('shi');
+                expect(pinyinRow.textContent).toContain('jie');
             });
         });
     });

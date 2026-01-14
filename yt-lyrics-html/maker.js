@@ -805,7 +805,13 @@ function nextLine() {
         addButtonEffect("nextLineBtn");
         currentLineIndex++;
         currentWordIndex = 0;
-        displayLyrics();
+
+        // 根據工作流程階段選擇正確的顯示函數
+        if (workflowPhase === 'SYNC_PINYIN') {
+            displayPinyinSyncInterface();
+        } else {
+            displayLyrics();
+        }
     }
 }
 function resetAll() {
