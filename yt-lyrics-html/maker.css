@@ -5,19 +5,20 @@ body {
     background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
     color: #2c3e50;
     margin: 0;
-    padding: 20px;
+    padding: 24px 32px;
     min-height: 100vh;
+    box-sizing: border-box;
 }
 
 .container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    max-width: 100%;
+    max-width: calc(100% - 48px);
     width: 100%;
-    margin: auto;
-    padding: 30px 40px;
-    border-radius: 20px;
+    margin: 0 auto;
+    padding: 20px 28px;
+    border-radius: 16px;
     background: white;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
@@ -25,57 +26,263 @@ body {
 /* 響應式設計 */
 @media (max-width: 768px) {
     body {
-        padding: 10px;
+        padding: 16px;
     }
 
     .container {
-        padding: 20px 15px;
-        border-radius: 15px;
+        max-width: calc(100% - 16px);
+        padding: 16px 12px;
+        border-radius: 12px;
     }
 }
 
-/* 標題區域 */
-h1 {
-    font-size: 32px;
+/* 標題工具列 */
+.header-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 12px;
+    gap: 16px;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-left .logo {
+    font-size: 16px;
     font-weight: 700;
-    color: #2c3e50;
-    margin-bottom: 8px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #667eea;
+    white-space: nowrap;
 }
 
-/* 副標題 */
-.subtitle {
-    font-size: 13px;
-    color: #7f8c8d;
-    margin-top: -8px;
-    margin-bottom: 24px;
-    font-style: italic;
+.header-left .credits {
+    font-size: 10px;
+    color: #9ca3af;
+    white-space: nowrap;
 }
 
-/* Github 連結 */
-.github-link {
+.header-left .credits a {
     color: #5b9bd5;
     text-decoration: none;
-    font-weight: 600;
-    transition: color 0.3s ease;
 }
 
-.github-link:hover {
-    color: #4a8bc2;
+.header-left .credits a:hover {
     text-decoration: underline;
 }
 
-/* 手機：標題調整 */
+/* 中間控制按鈕 */
+.header-center {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ctrl-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #e1e8ed;
+    border-radius: 6px;
+    background: white;
+    color: #4b5563;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ctrl-btn:hover {
+    background: #f3f4f6;
+    border-color: #5b9bd5;
+}
+
+.ctrl-btn:active {
+    transform: scale(0.95);
+}
+
+.ctrl-btn.primary {
+    background: linear-gradient(135deg, #5b9bd5 0%, #4a8bc2 100%);
+    border-color: #5b9bd5;
+    color: white;
+}
+
+.ctrl-btn.primary:hover {
+    background: linear-gradient(135deg, #4a8bc2 0%, #3d7cb0 100%);
+}
+
+.ctrl-btn.danger {
+    color: #ef4444;
+}
+
+.ctrl-btn.danger:hover {
+    background: #fef2f2;
+    border-color: #ef4444;
+}
+
+.ctrl-btn.help {
+    color: #6b7280;
+    font-weight: 700;
+}
+
+.ctrl-btn.help:hover {
+    background: #f0f9ff;
+    border-color: #5b9bd5;
+    color: #5b9bd5;
+}
+
+/* 操作說明面板 */
+.help-panel {
+    display: none;
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    animation: slideDown 0.2s ease;
+}
+
+.help-panel.show {
+    display: block;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.help-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+}
+
+.help-section {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+}
+
+.help-section strong {
+    font-size: 11px;
+    color: #0369a1;
+}
+
+.help-section span {
+    font-size: 11px;
+    color: #475569;
+}
+
 @media (max-width: 768px) {
-    h1 {
-        font-size: 26px;
+    .help-content {
+        flex-direction: column;
+        gap: 8px;
     }
 
-    .subtitle {
-        font-size: 12px;
+    .help-section {
+        text-align: center;
+    }
+}
+
+/* 右側角色選擇 */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.header-right .role-label {
+    font-size: 11px;
+    color: #6b7280;
+    margin-right: 4px;
+}
+
+.header-right .role-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid #e1e8ed;
+    border-radius: 4px;
+    background: white;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.header-right .role-btn:hover {
+    border-color: #5b9bd5;
+}
+
+.header-right .role-btn.active {
+    background: #5b9bd5;
+    border-color: #5b9bd5;
+    color: white;
+}
+
+.header-right .role-btn[data-role="1"].active {
+    background: #FF6B9D;
+    border-color: #FF6B9D;
+}
+
+.header-right .role-btn[data-role="2"].active {
+    background: #98FB98;
+    border-color: #98FB98;
+    color: #2c3e50;
+}
+
+.header-right .role-btn[data-role="3"].active {
+    background: #FFD700;
+    border-color: #FFD700;
+    color: #2c3e50;
+}
+
+/* 手機：工具列調整 */
+@media (max-width: 768px) {
+    .header-toolbar {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .header-left {
+        order: 1;
+        flex: 1;
+    }
+
+    .header-left .logo {
+        font-size: 14px;
+    }
+
+    .header-left .credits {
+        display: none;
+    }
+
+    .header-center {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .header-right {
+        order: 2;
+    }
+
+    .ctrl-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
     }
 }
 /* 分隔線 */
@@ -454,203 +661,148 @@ h1 {
 }
 
 
-#timestampsDisplay {
-    width: 90%;
-    height: 130px;
-    padding: 10px;
-    font-size: 16px;
-    border-radius: 5px;
-    border: 1px solid #c9c8c835;
-    background: #c9c8c835;
-    color: #000;
-    resize: none;
-}
+/* =============================================
+   時間記錄 - 折疊式設計
+   ============================================= */
 
-.lyrics-controls {
+.timestamps-collapsible {
     width: 100%;
-    margin-top: 10px;
+    margin-top: 12px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e1e8ed;
+    background: white;
 }
 
-.download-button-container {
-    width: 100%;
-    margin-top: 10px;
-    text-align: right;
-}
-
-.download-button-container button {
-    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-    color: white;
-    font-weight: 600;
-    font-size: 15px;
-    padding: 12px 20px;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    border: none;
-    width: 100%;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
-}
-
-.download-button-container button:hover {
-    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
-    box-shadow: 0 6px 16px rgba(243, 156, 18, 0.4);
-    transform: translateY(-2px);
-}
-
-.download-button-container button:active {
-    transform: translateY(0);
-}
-
-/* 手機：按鈕調整 */
-@media (max-width: 768px) {
-    .download-button-container button {
-        padding: 14px 20px;
-        font-size: 16px;
-    }
-}
-
-/* 🎭 角色選擇器 */
-.role-selector {
+.timestamps-summary {
     display: flex;
-    justify-content: center;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #f8f9fb 0%, #f1f3f7 100%);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    gap: 12px;
+}
+
+.timestamps-summary:hover {
+    background: linear-gradient(135deg, #f1f3f7 0%, #e8ecf1 100%);
+}
+
+.progress-indicator {
+    font-size: 13px;
+    font-weight: 600;
+    color: #5b9bd5;
+    flex: 1;
+}
+
+.last-record {
+    font-size: 12px;
+    color: #7f8c8d;
+    font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.summary-actions {
+    display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 16px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, #f8f9fb 0%, #f1f3f7 100%);
-    border-radius: 12px;
-    border: 1px solid #e1e8ed;
 }
 
-.role-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-right: 8px;
+.expand-icon {
+    font-size: 12px;
+    color: #9ca3af;
+    transition: transform 0.3s ease;
 }
 
-.role-btn {
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 600;
-    border: 2px solid #e1e8ed;
-    border-radius: 8px;
-    cursor: pointer;
-    background: white;
-    color: #2c3e50;
-    transition: all 0.2s ease;
+.timestamps-collapsible.expanded .expand-icon {
+    transform: rotate(180deg);
 }
 
-.role-btn:hover {
-    border-color: #5b9bd5;
-    background: #f8f9fb;
-}
-
-.role-btn.active {
-    background: linear-gradient(135deg, #5b9bd5 0%, #4a8bc2 100%);
-    border-color: #5b9bd5;
-    color: white;
-}
-
-/* 角色按鈕顏色標示 */
-.role-btn[data-role="1"].active {
-    background: linear-gradient(135deg, #FF6B9D 0%, #e55a8a 100%);
-    border-color: #FF6B9D;
-}
-
-.role-btn[data-role="2"].active {
-    background: linear-gradient(135deg, #98FB98 0%, #7be07b 100%);
-    border-color: #98FB98;
-    color: #2c3e50;
-}
-
-.role-btn[data-role="3"].active {
-    background: linear-gradient(135deg, #FFD700 0%, #e6c200 100%);
-    border-color: #FFD700;
-    color: #2c3e50;
-}
-
-/* 手機：角色選擇器調整 */
-@media (max-width: 768px) {
-    .role-selector {
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 10px 16px;
-    }
-
-    .role-label {
-        width: 100%;
-        text-align: center;
-        margin-right: 0;
-        margin-bottom: 4px;
-    }
-
-    .role-btn {
-        padding: 8px 12px;
-        font-size: 13px;
-    }
-}
-
-/* 🎮 控制按鈕區 */
-.controls {
+/* 下載 Icon 按鈕 */
+.download-icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #e1e8ed;
+    color: #9ca3af;
+    cursor: not-allowed;
     display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 12px;
-    margin-top: 24px;
-    flex-wrap: wrap;
-}
-
-.controls button {
-    padding: 12px 20px;
-    font-size: 15px;
-    font-weight: 600;
-    border: 2px solid #e1e8ed;
-    border-radius: 12px;
-    cursor: pointer;
-    background: white;
-    color: #2c3e50;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.controls button:hover {
-    background: #f8f9fb;
-    border-color: #5b9bd5;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transform: translateY(-2px);
+.download-icon-btn:disabled {
+    opacity: 0.5;
 }
 
-.controls button:active,
-.controls button.active {
-    background: linear-gradient(135deg, #5b9bd5 0%, #4a8bc2 100%);
-    border-color: #5b9bd5;
+.download-icon-btn.active {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
     color: white;
-    transform: translateY(0) scale(0.98);
-    box-shadow: 0 2px 8px rgba(91, 155, 213, 0.4);
+    cursor: pointer;
+    opacity: 1;
+    animation: pulse-glow 2s infinite;
 }
 
-/* 手機：按鈕更大 */
+.download-icon-btn.active:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.5);
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.4); }
+    50% { box-shadow: 0 0 0 6px rgba(243, 156, 18, 0); }
+}
+
+/* 展開內容 */
+.timestamps-details {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.timestamps-details.collapsed {
+    max-height: 0;
+}
+
+.timestamps-collapsible.expanded .timestamps-details {
+    max-height: 200px;
+}
+
+.timestamps-details .table-wrapper {
+    max-height: 180px;
+    overflow-y: auto;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+    border-top: 1px solid #e1e8ed;
+}
+
+/* 手機調整 */
 @media (max-width: 768px) {
-    .controls {
-        gap: 8px;
+    .timestamps-summary {
+        padding: 8px 12px;
+        flex-wrap: wrap;
+    }
+
+    .progress-indicator {
+        font-size: 12px;
+    }
+
+    .last-record {
+        font-size: 11px;
         width: 100%;
-        padding: 0 10px;
+        order: 3;
+        margin-top: 4px;
     }
 
-    .controls button {
-        padding: 14px 18px;
-        font-size: 14px;
-        flex: 1 1 auto;
-        min-width: 45%;
+    .download-icon-btn {
+        width: 28px;
+        height: 28px;
     }
 }
 
-@media (max-width: 480px) {
-    .controls button {
-        padding: 12px 16px;
-        font-size: 13px;
-    }
-}
 
 /* Timestamp Table */
 /* 🎨 表格外框 */
@@ -779,33 +931,6 @@ h1 {
 }
 
 /* 🔹 進度UI顯示歌詞同步狀態 */
-.lyrics-status {
-    font-size: 14px;
-    font-weight: 600;
-    color: #5b9bd5;
-    margin-top: 12px;
-    padding: 12px 16px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, rgba(91, 155, 213, 0.1) 0%, rgba(74, 139, 194, 0.1) 100%);
-    text-align: center;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(91, 155, 213, 0.2);
-}
-
-/* 🟢 當行已完成時進度UI變色 */
-.lyrics-status.complete {
-    background: linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(39, 174, 96, 0.1) 100%);
-    color: #27ae60;
-    border-color: rgba(46, 204, 113, 0.3);
-}
-
-/* 手機：狀態文字調整 */
-@media (max-width: 768px) {
-    .lyrics-status {
-        font-size: 13px;
-        padding: 10px 14px;
-    }
-}
 
 /* 🔥 煙火容器 */
 #fireworks-container {
@@ -880,38 +1005,6 @@ h1 {
 /* ==============================================
    Phase 3: Mapping UI Styles
    ============================================== */
-
-/* Mapping Container */
-#mappingContainer {
-    width: 100%;
-    padding: 30px;
-    background: linear-gradient(135deg, #f8f9fb 0%, #f1f3f7 100%);
-    border-radius: 16px;
-    margin: 20px 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-#mappingContainer h2 {
-    font-size: 24px;
-    font-weight: 700;
-    color: #2c3e50;
-    margin-bottom: 16px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.mapping-instructions {
-    font-size: 16px;
-    color: #555;
-    margin-bottom: 20px;
-    padding: 12px 16px;
-    background: #fff3cd;
-    border-left: 4px solid #ffc107;
-    border-radius: 4px;
-    text-align: left;
-}
 
 /* Main Lyric Display */
 .main-lyrics-display {
@@ -1078,57 +1171,6 @@ h1 {
     background: #5a6268;
 }
 
-/* Mapping Progress */
-.mapping-progress {
-    margin-top: 20px;
-    padding: 12px 16px;
-    background: white;
-    border-radius: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.mapping-progress span {
-    font-size: 14px;
-    font-weight: 600;
-    color: #2c3e50;
-}
-
-/* Mapping Controls */
-.mapping-controls {
-    margin-top: 20px;
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-}
-
-.mapping-controls button {
-    padding: 12px 24px;
-    font-size: 16px;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: #667eea;
-    color: white;
-}
-
-.mapping-controls button:hover {
-    background: #5568d3;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.mapping-controls button.export-btn {
-    background: #28a745;
-}
-
-.mapping-controls button.export-btn:hover {
-    background: #218838;
-}
-
 /* Main Lyric Preview (during Phase 2) */
 .main-lyric-preview {
     font-size: 14px;
@@ -1140,10 +1182,6 @@ h1 {
 
 /* Responsive Design for Mapping UI */
 @media (max-width: 768px) {
-    #mappingContainer {
-        padding: 20px 15px;
-    }
-
     .main-lyric-text {
         font-size: 22px;
         padding: 12px 16px;
@@ -1161,19 +1199,6 @@ h1 {
 
     .mapping-input input,
     .mapping-input button {
-        width: 100%;
-    }
-
-    .mapping-progress {
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    .mapping-controls {
-        flex-direction: column;
-    }
-
-    .mapping-controls button {
         width: 100%;
     }
 }
@@ -1318,17 +1343,6 @@ h1 {
     background: #c82333;
 }
 
-.mapping-keyboard-status {
-    margin-top: 20px;
-    padding: 12px;
-    background: #fff3cd;
-    border-radius: 6px;
-    font-size: 14px;
-    text-align: center;
-    color: #856404;
-    font-family: monospace;
-}
-
 /* ==============================================
    Group Mapping Dialog
    ============================================== */
@@ -1356,14 +1370,20 @@ h1 {
 
 /* Dialog Container */
 .group-mapping-dialog {
-    width: 90vw;
-    max-width: 1200px;
-    max-height: 90vh;
+    width: 95vw;
+    max-width: 1400px;
+    height: 90vh;
     padding: 0;
     border: none;
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     overflow: hidden;
+}
+
+/* Only show flex layout when dialog is open */
+.group-mapping-dialog[open] {
+    display: flex;
+    flex-direction: column;
 }
 
 .group-mapping-dialog::backdrop {
@@ -1373,17 +1393,18 @@ h1 {
 
 /* Dialog Header */
 .dialog-header {
-    padding: 20px 24px;
+    padding: 14px 24px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .dialog-header h2 {
     margin: 0;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
 }
 
@@ -1391,10 +1412,10 @@ h1 {
     background: transparent;
     border: none;
     color: white;
-    font-size: 32px;
+    font-size: 28px;
     cursor: pointer;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1406,34 +1427,39 @@ h1 {
     background: rgba(255, 255, 255, 0.2);
 }
 
-/* Instructions */
-.dialog-instructions {
-    padding: 16px 24px;
-    background: #e7f3ff;
-    border-left: 4px solid #2196f3;
-    font-size: 15px;
-    line-height: 1.8;
+/* Info Bar (Always visible) */
+.info-bar {
+    padding: 10px 24px;
+    background: #fff8e1;
+    border-bottom: 2px solid #ffd54f;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #5d4037;
+    flex-shrink: 0;
 }
 
 /* Dialog Content */
 .dialog-content {
-    padding: 24px;
+    padding: 20px 24px;
     overflow-y: auto;
-    max-height: calc(90vh - 350px);
+    flex: 1;
     background: #f5f7fa;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Mapping Section */
 .mapping-section {
-    margin-bottom: 24px;
+    margin-bottom: 16px;
+    flex-shrink: 0;
 }
 
 .section-title {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     color: #2c3e50;
-    margin-bottom: 12px;
-    padding: 8px 12px;
+    margin-bottom: 8px;
+    padding: 6px 10px;
     background: #f8f9fb;
     border-radius: 6px;
 }
@@ -1442,28 +1468,30 @@ h1 {
 .pinyin-list-horizontal, .lyrics-list-horizontal {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    padding: 20px;
+    gap: 10px;
+    padding: 16px;
     background: white;
     border: 2px solid #e1e8ed;
     border-radius: 12px;
-    min-height: 80px;
-    align-items: center;
+    min-height: 70px;
+    max-height: 180px;
+    overflow-y: auto;
+    align-items: flex-start;
     justify-content: center;
 }
 
 /* Pinyin and Lyric Items */
 .pinyin-item, .lyric-item {
-    padding: 14px 20px;
+    padding: 10px 16px;
     border: 3px solid #e1e8ed;
-    border-radius: 10px;
+    border-radius: 8px;
     background: white;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 600;
     text-align: center;
-    min-width: 60px;
+    min-width: 50px;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -1473,15 +1501,15 @@ h1 {
 
 /* Pinyin annotation on top of lyric */
 .lyric-pinyin-annotation {
-    font-size: 14px;
+    font-size: 12px;
     color: #5b9bd5;
     font-weight: 500;
-    margin-bottom: 4px;
-    line-height: 1.2;
+    margin-bottom: 3px;
+    line-height: 1.1;
 }
 
 .lyric-char {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
     color: #2c3e50;
 }
@@ -1588,25 +1616,27 @@ h1 {
 
 /* Progress Display */
 .mapping-progress {
-    margin-top: 16px;
-    padding: 10px 16px;
+    margin-top: 12px;
+    padding: 8px 14px;
     background: #fff3cd;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 13px;
     text-align: center;
     color: #856404;
     display: flex;
     justify-content: space-between;
+    flex-shrink: 0;
 }
 
 /* Dialog Footer */
 .dialog-footer {
-    padding: 20px 24px;
+    padding: 14px 24px;
     background: #f8f9fb;
     border-top: 2px solid #e1e8ed;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
+    flex-shrink: 0;
 }
 
 .mapping-navigation {
@@ -1622,8 +1652,8 @@ h1 {
 }
 
 .dialog-footer button {
-    padding: 12px 24px;
-    font-size: 16px;
+    padding: 10px 20px;
+    font-size: 15px;
     font-weight: 600;
     border: none;
     border-radius: 8px;
