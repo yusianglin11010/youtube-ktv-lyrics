@@ -1655,6 +1655,109 @@ function generateGroupedPinyinText() {
     return result.join('\n');
 }
 
+/**
+ * Merge pinyinTimestamps when multiple pinyin syllables are mapped to one character.
+ * - Automatically detects if timestamps exist
+ * - Combines start time from first syllable and end time from last syllable
+ * - Re-indexes syllableIndex to ensure sequential numbering
+ */
+function mergePinyinTimestamps() {
+    // Skip if no timestamps exist (text-only mapping mode)
+    if (pinyinTimestamps.length === 0) {
+        return;
+    }
+
+    // Build a map of multi-syllable mappings
+    // Key: "line-firstSyllableIndex" (1-based), Value: mapping info
+    let mergeMap = new Map();
+
+    groupMappingState.mappings.forEach(mapping => {
+        if (mapping.pinyinIndices.length > 1) {
+            // Convert to 1-based indices to match pinyinTimestamps
+            let line = mapping.line + 1;
+            let firstIdx = mapping.pinyinIndices[0] + 1;
+            let key = `${line}-${firstIdx}`;
+            mergeMap.set(key, {
+                line: line,
+                pinyinIndices: mapping.pinyinIndices.map(i => i + 1),
+                combinedPinyin: mapping.pinyin
+            });
+        }
+    });
+
+    // If no multi-syllable mappings, nothing to merge
+    if (mergeMap.size === 0) {
+        return;
+    }
+
+    // Track which entries to remove and new merged entries
+    let indicesToRemove = new Set();
+    let mergedEntries = [];
+
+    mergeMap.forEach((mergeInfo) => {
+        // Find all timestamp entries for this merge group
+        let groupEntries = mergeInfo.pinyinIndices.map(syllableIdx => {
+            return pinyinTimestamps.find(p =>
+                p.line === mergeInfo.line && p.syllableIndex === syllableIdx
+            );
+        }).filter(Boolean);
+
+        // Only merge if ALL syllables have timestamps
+        if (groupEntries.length === mergeInfo.pinyinIndices.length) {
+            // Create merged entry
+            let mergedEntry = {
+                line: mergeInfo.line,
+                syllableIndex: mergeInfo.pinyinIndices[0], // Keep first index temporarily
+                start: groupEntries[0].start,
+                end: groupEntries[groupEntries.length - 1].end,
+                syllable: mergeInfo.combinedPinyin,
+                role: groupEntries[0].role,
+                mappedToWord: null
+            };
+
+            mergedEntries.push(mergedEntry);
+
+            // Mark all original entries for removal
+            mergeInfo.pinyinIndices.forEach(syllableIdx => {
+                indicesToRemove.add(`${mergeInfo.line}-${syllableIdx}`);
+            });
+        }
+    });
+
+    // Build new array: keep non-merged entries, add merged entries
+    let newTimestamps = [];
+
+    pinyinTimestamps.forEach(entry => {
+        let key = `${entry.line}-${entry.syllableIndex}`;
+        if (!indicesToRemove.has(key)) {
+            newTimestamps.push({ ...entry });
+        }
+    });
+
+    // Add merged entries
+    newTimestamps.push(...mergedEntries);
+
+    // Sort by line and syllableIndex
+    newTimestamps.sort((a, b) => {
+        if (a.line !== b.line) return a.line - b.line;
+        return a.syllableIndex - b.syllableIndex;
+    });
+
+    // Re-index syllableIndex to be sequential within each line
+    let lineCounters = {};
+    newTimestamps.forEach(entry => {
+        if (!lineCounters[entry.line]) {
+            lineCounters[entry.line] = 1;
+        }
+        entry.syllableIndex = lineCounters[entry.line]++;
+    });
+
+    // Replace global array
+    pinyinTimestamps = newTimestamps;
+
+    console.log('Merged pinyinTimestamps:', pinyinTimestamps);
+}
+
 function saveGroupMappings() {
     // Validate all lines
     let incomplete = [];
@@ -1676,6 +1779,9 @@ function saveGroupMappings() {
 
     // Update pinyinInput textarea
     document.getElementById("pinyinInput").value = groupedText;
+
+    // Merge timestamps if they exist (auto-detect mode)
+    mergePinyinTimestamps();
 
     // Store mappings in global variable (convert to 1-based for consistency)
     pinyinToLyricMappings = groupMappingState.mappings.map(m => ({

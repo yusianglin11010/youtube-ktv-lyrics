@@ -635,6 +635,107 @@ function prepareGroupMappingData() {
     };
 }
 
+/**
+ * Merge pinyinTimestamps when multiple pinyin syllables are mapped to one character.
+ * - Automatically detects if timestamps exist
+ * - Combines start time from first syllable and end time from last syllable
+ * - Re-indexes syllableIndex to ensure sequential numbering
+ */
+function mergePinyinTimestamps() {
+    // Skip if no timestamps exist (text-only mapping mode)
+    if (pinyinTimestamps.length === 0) {
+        return;
+    }
+
+    // Build a map of multi-syllable mappings
+    // Key: "line-firstSyllableIndex" (1-based), Value: mapping info
+    let mergeMap = new Map();
+
+    groupMappingState.mappings.forEach(mapping => {
+        if (mapping.pinyinIndices.length > 1) {
+            // Convert to 1-based indices to match pinyinTimestamps
+            let line = mapping.line + 1;
+            let firstIdx = mapping.pinyinIndices[0] + 1;
+            let key = `${line}-${firstIdx}`;
+            mergeMap.set(key, {
+                line: line,
+                pinyinIndices: mapping.pinyinIndices.map(i => i + 1),
+                combinedPinyin: mapping.pinyin
+            });
+        }
+    });
+
+    // If no multi-syllable mappings, nothing to merge
+    if (mergeMap.size === 0) {
+        return;
+    }
+
+    // Track which entries to remove and new merged entries
+    let indicesToRemove = new Set();
+    let mergedEntries = [];
+
+    mergeMap.forEach((mergeInfo) => {
+        // Find all timestamp entries for this merge group
+        let groupEntries = mergeInfo.pinyinIndices.map(syllableIdx => {
+            return pinyinTimestamps.find(p =>
+                p.line === mergeInfo.line && p.syllableIndex === syllableIdx
+            );
+        }).filter(Boolean);
+
+        // Only merge if ALL syllables have timestamps
+        if (groupEntries.length === mergeInfo.pinyinIndices.length) {
+            // Create merged entry
+            let mergedEntry = {
+                line: mergeInfo.line,
+                syllableIndex: mergeInfo.pinyinIndices[0], // Keep first index temporarily
+                start: groupEntries[0].start,
+                end: groupEntries[groupEntries.length - 1].end,
+                syllable: mergeInfo.combinedPinyin,
+                role: groupEntries[0].role,
+                mappedToWord: null
+            };
+
+            mergedEntries.push(mergedEntry);
+
+            // Mark all original entries for removal
+            mergeInfo.pinyinIndices.forEach(syllableIdx => {
+                indicesToRemove.add(`${mergeInfo.line}-${syllableIdx}`);
+            });
+        }
+    });
+
+    // Build new array: keep non-merged entries, add merged entries
+    let newTimestamps = [];
+
+    pinyinTimestamps.forEach(entry => {
+        let key = `${entry.line}-${entry.syllableIndex}`;
+        if (!indicesToRemove.has(key)) {
+            newTimestamps.push({ ...entry });
+        }
+    });
+
+    // Add merged entries
+    newTimestamps.push(...mergedEntries);
+
+    // Sort by line and syllableIndex
+    newTimestamps.sort((a, b) => {
+        if (a.line !== b.line) return a.line - b.line;
+        return a.syllableIndex - b.syllableIndex;
+    });
+
+    // Re-index syllableIndex to be sequential within each line
+    let lineCounters = {};
+    newTimestamps.forEach(entry => {
+        if (!lineCounters[entry.line]) {
+            lineCounters[entry.line] = 1;
+        }
+        entry.syllableIndex = lineCounters[entry.line]++;
+    });
+
+    // Replace global array
+    pinyinTimestamps = newTimestamps;
+}
+
 // ============================================
 // TEST SUITES
 // ============================================
@@ -1564,6 +1665,207 @@ describe('Maker Workflow Integration Tests', () => {
 
                 expect(data).toBeNull();
                 expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('行數'));
+            });
+        });
+
+        describe('mergePinyinTimestamps()', () => {
+            beforeEach(() => {
+                groupMappingState = {
+                    currentLine: 0,
+                    pinyinData: [],
+                    lyricsData: [],
+                    mappings: [],
+                    selection: [],
+                    pinyinFocus: 0,
+                    lyricFocus: 0
+                };
+            });
+
+            test('should skip merging when pinyinTimestamps is empty', () => {
+                pinyinTimestamps = [];
+                groupMappingState.mappings = [
+                    { line: 0, pinyinIndices: [0, 1], lyricIdx: 0, pinyin: 'su ko', lyric: '少' }
+                ];
+
+                mergePinyinTimestamps();
+
+                expect(pinyinTimestamps).toEqual([]);
+            });
+
+            test('should skip merging when no multi-syllable mappings exist', () => {
+                pinyinTimestamps = [
+                    { line: 1, syllableIndex: 1, start: '00:05:00', end: '00:05:50', syllable: 'su', role: '' },
+                    { line: 1, syllableIndex: 2, start: '00:05:50', end: '00:06:10', syllable: 'ko', role: '' }
+                ];
+                groupMappingState.mappings = [
+                    { line: 0, pinyinIndices: [0], lyricIdx: 0, pinyin: 'su', lyric: '少' },
+                    { line: 0, pinyinIndices: [1], lyricIdx: 1, pinyin: 'ko', lyric: 'し' }
+                ];
+
+                const originalLength = pinyinTimestamps.length;
+                mergePinyinTimestamps();
+
+                expect(pinyinTimestamps.length).toBe(originalLength);
+            });
+
+            test('should merge timestamps when multiple pinyin syllables are mapped to one character', () => {
+                // su (t0→t1), ko (t1→t2), shi (t2→t3)
+                pinyinTimestamps = [
+                    { line: 1, syllableIndex: 1, start: '00:05:00', end: '00:05:50', syllable: 'su', role: '1' },
+                    { line: 1, syllableIndex: 2, start: '00:05:50', end: '00:06:10', syllable: 'ko', role: '1' },
+                    { line: 1, syllableIndex: 3, start: '00:06:10', end: '00:06:45', syllable: 'shi', role: '1' }
+                ];
+                // [su ko] → 少, shi → し
+                groupMappingState.mappings = [
+                    { line: 0, pinyinIndices: [0, 1], lyricIdx: 0, pinyin: 'su ko', lyric: '少' },
+                    { line: 0, pinyinIndices: [2], lyricIdx: 1, pinyin: 'shi', lyric: 'し' }
+                ];
+
+                mergePinyinTimestamps();
+
+                // After merge: [su ko] (t0→t2), shi (t2→t3)
+                expect(pinyinTimestamps.length).toBe(2);
+
+                // First entry should be merged
+                expect(pinyinTimestamps[0].syllable).toBe('su ko');
+                expect(pinyinTimestamps[0].start).toBe('00:05:00');
+                expect(pinyinTimestamps[0].end).toBe('00:06:10');
+                expect(pinyinTimestamps[0].syllableIndex).toBe(1);
+
+                // Second entry should be re-indexed
+                expect(pinyinTimestamps[1].syllable).toBe('shi');
+                expect(pinyinTimestamps[1].start).toBe('00:06:10');
+                expect(pinyinTimestamps[1].end).toBe('00:06:45');
+                expect(pinyinTimestamps[1].syllableIndex).toBe(2);
+            });
+
+            test('should inherit role from first syllable when merging', () => {
+                pinyinTimestamps = [
+                    { line: 1, syllableIndex: 1, start: '00:05:00', end: '00:05:50', syllable: 'a', role: '1' },
+                    { line: 1, syllableIndex: 2, start: '00:05:50', end: '00:06:10', syllable: 'b', role: '2' }
+                ];
+                groupMappingState.mappings = [
+                    { line: 0, pinyinIndices: [0, 1], lyricIdx: 0, pinyin: 'a b', lyric: '字' }
+                ];
+
+                mergePinyinTimestamps();
+
+                expect(pinyinTimestamps[0].role).toBe('1');
+            });
+
+            test('should handle multiple merge groups in the same line', () => {
+                // a b c d → [a b] [c d]
+                pinyinTimestamps = [
+                    { line: 1, syllableIndex: 1, start: '00:01:00', end: '00:01:10', syllable: 'a', role: '' },
+                    { line: 1, syllableIndex: 2, start: '00:01:10', end: '00:01:20', syllable: 'b', role: '' },
+                    { line: 1, syllableIndex: 3, start: '00:01:20', end: '00:01:30', syllable: 'c', role: '' },
+                    { line: 1, syllableIndex: 4, start: '00:01:30', end: '00:01:40', syllable: 'd', role: '' }
+                ];
+                groupMappingState.mappings = [
+                    { line: 0, pinyinIndices: [0, 1], lyricIdx: 0, pinyin: 'a b', lyric: '甲' },
+                    { line: 0, pinyinIndices: [2, 3], lyricIdx: 1, pinyin: 'c d', lyric: '乙' }
+                ];
+
+                mergePinyinTimestamps();
+
+                expect(pinyinTimestamps.length).toBe(2);
+                expect(pinyinTimestamps[0].syllable).toBe('a b');
+                expect(pinyinTimestamps[0].start).toBe('00:01:00');
+                expect(pinyinTimestamps[0].end).toBe('00:01:20');
+                expect(pinyinTimestamps[0].syllableIndex).toBe(1);
+
+                expect(pinyinTimestamps[1].syllable).toBe('c d');
+                expect(pinyinTimestamps[1].start).toBe('00:01:20');
+                expect(pinyinTimestamps[1].end).toBe('00:01:40');
+                expect(pinyinTimestamps[1].syllableIndex).toBe(2);
+            });
+
+            test('should handle merge across multiple lines', () => {
+                pinyinTimestamps = [
+                    { line: 1, syllableIndex: 1, start: '00:01:00', end: '00:01:10', syllable: 'a', role: '' },
+                    { line: 1, syllableIndex: 2, start: '00:01:10', end: '00:01:20', syllable: 'b', role: '' },
+                    { line: 2, syllableIndex: 1, start: '00:02:00', end: '00:02:10', syllable: 'c', role: '' },
+                    { line: 2, syllableIndex: 2, start: '00:02:10', end: '00:02:20', syllable: 'd', role: '' }
+                ];
+                groupMappingState.mappings = [
+                    { line: 0, pinyinIndices: [0, 1], lyricIdx: 0, pinyin: 'a b', lyric: '甲' },
+                    { line: 1, pinyinIndices: [0, 1], lyricIdx: 0, pinyin: 'c d', lyric: '乙' }
+                ];
+
+                mergePinyinTimestamps();
+
+                expect(pinyinTimestamps.length).toBe(2);
+
+                // Line 1
+                expect(pinyinTimestamps[0].line).toBe(1);
+                expect(pinyinTimestamps[0].syllable).toBe('a b');
+                expect(pinyinTimestamps[0].start).toBe('00:01:00');
+                expect(pinyinTimestamps[0].end).toBe('00:01:20');
+
+                // Line 2
+                expect(pinyinTimestamps[1].line).toBe(2);
+                expect(pinyinTimestamps[1].syllable).toBe('c d');
+                expect(pinyinTimestamps[1].start).toBe('00:02:00');
+                expect(pinyinTimestamps[1].end).toBe('00:02:20');
+            });
+
+            test('should re-index syllableIndex to be sequential after merge', () => {
+                // a b c d e → [a b] c [d e]
+                pinyinTimestamps = [
+                    { line: 1, syllableIndex: 1, start: '00:01:00', end: '00:01:10', syllable: 'a', role: '' },
+                    { line: 1, syllableIndex: 2, start: '00:01:10', end: '00:01:20', syllable: 'b', role: '' },
+                    { line: 1, syllableIndex: 3, start: '00:01:20', end: '00:01:30', syllable: 'c', role: '' },
+                    { line: 1, syllableIndex: 4, start: '00:01:30', end: '00:01:40', syllable: 'd', role: '' },
+                    { line: 1, syllableIndex: 5, start: '00:01:40', end: '00:01:50', syllable: 'e', role: '' }
+                ];
+                groupMappingState.mappings = [
+                    { line: 0, pinyinIndices: [0, 1], lyricIdx: 0, pinyin: 'a b', lyric: '甲' },
+                    { line: 0, pinyinIndices: [2], lyricIdx: 1, pinyin: 'c', lyric: '乙' },
+                    { line: 0, pinyinIndices: [3, 4], lyricIdx: 2, pinyin: 'd e', lyric: '丙' }
+                ];
+
+                mergePinyinTimestamps();
+
+                expect(pinyinTimestamps.length).toBe(3);
+                expect(pinyinTimestamps[0].syllableIndex).toBe(1);
+                expect(pinyinTimestamps[1].syllableIndex).toBe(2);
+                expect(pinyinTimestamps[2].syllableIndex).toBe(3);
+            });
+
+            test('should only merge when ALL syllables have timestamps', () => {
+                // Only first syllable has timestamp, second is missing
+                pinyinTimestamps = [
+                    { line: 1, syllableIndex: 1, start: '00:01:00', end: '00:01:10', syllable: 'a', role: '' }
+                    // syllableIndex 2 is missing
+                ];
+                groupMappingState.mappings = [
+                    { line: 0, pinyinIndices: [0, 1], lyricIdx: 0, pinyin: 'a b', lyric: '字' }
+                ];
+
+                const originalTimestamps = JSON.parse(JSON.stringify(pinyinTimestamps));
+                mergePinyinTimestamps();
+
+                // Should not merge because second syllable is missing
+                expect(pinyinTimestamps.length).toBe(1);
+                expect(pinyinTimestamps[0].syllable).toBe('a');
+            });
+
+            test('should handle merging 3 or more syllables', () => {
+                pinyinTimestamps = [
+                    { line: 1, syllableIndex: 1, start: '00:01:00', end: '00:01:10', syllable: 'a', role: '' },
+                    { line: 1, syllableIndex: 2, start: '00:01:10', end: '00:01:20', syllable: 'b', role: '' },
+                    { line: 1, syllableIndex: 3, start: '00:01:20', end: '00:01:30', syllable: 'c', role: '' }
+                ];
+                groupMappingState.mappings = [
+                    { line: 0, pinyinIndices: [0, 1, 2], lyricIdx: 0, pinyin: 'a b c', lyric: '字' }
+                ];
+
+                mergePinyinTimestamps();
+
+                expect(pinyinTimestamps.length).toBe(1);
+                expect(pinyinTimestamps[0].syllable).toBe('a b c');
+                expect(pinyinTimestamps[0].start).toBe('00:01:00');
+                expect(pinyinTimestamps[0].end).toBe('00:01:30');
             });
         });
     });
