@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>YouTube KTV 字幕產生器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="maker.css">
 </head>
 <body>
@@ -51,9 +54,14 @@
         <div class="top-section">
             <!-- YouTube 影片與輸入 -->
             <div class="video-container">
-                <input type="text" id="videoUrl" placeholder="https://www.youtube.com/..." class="url-input">
-                <br>
-                <button class="load-video-btn" onclick="loadVideo()">載入影片</button>
+                <div class="video-url-row">
+                    <input type="text" id="videoUrl" placeholder="https://www.youtube.com/..." class="url-input">
+                    <button class="load-video-btn" onclick="loadVideo()" title="載入影片">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                    </button>
+                </div>
                 <div id="player"></div>
             </div>
 
@@ -76,14 +84,10 @@
                     <button type="button" class="validate-btn" onclick="validateAlignment()">驗證對齊</button>
                     <button type="button" class="group-mapping-btn" onclick="openGroupMappingDialog()">群組 Mapping</button>
                 </div>
-                <div class="lyrics-button-container">
-                    <button class="load-lyrics-btn" onclick="loadLyrics()">載入歌詞</button>
-                </div>
 
                 <!-- 逐字時間紀錄 - 折疊式 -->
                 <div class="timestamps-collapsible">
                     <div class="timestamps-summary" onclick="toggleTimestampDetails()">
-                        <span class="progress-indicator" id="timestampProgress">尚未載入歌詞</span>
                         <span class="last-record" id="lastRecord"></span>
                         <div class="summary-actions">
                             <button class="download-icon-btn" id="downloadBtn" onclick="event.stopPropagation(); exportTimestamps()" disabled title="下載時間紀錄">
@@ -112,6 +116,16 @@
                             </table>
                         </div>
                     </div>
+                </div>
+
+                <div class="lyrics-button-container">
+                    <button class="load-lyrics-btn" onclick="loadLyrics()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        開始製作字幕
+                    </button>
                 </div>
             </div>
         </div>

@@ -45,8 +45,8 @@ const VideoController = (function() {
         }
 
         player = new YT.Player('player', {
-            height: '480',
-            width: '854',
+            height: '100%',
+            width: '100%',
             videoId: videoId,
             playerVars: { 'autoplay': 1, 'controls': 1 },
             events: {

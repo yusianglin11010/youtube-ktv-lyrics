@@ -156,6 +156,7 @@ const UIHandlers = (function() {
 
     /**
      * 更新拼音時間戳記顯示
+     * 表格欄位：行 | 字 | 開始 | 結束 | 角色
      */
     function updatePinyinTimestampsDisplay() {
         let tableBody = document.querySelector("#timestampsTable tbody");
@@ -166,9 +167,8 @@ const UIHandlers = (function() {
             let roleDisplay = p.role ? ROLE_NAMES[p.role] || p.role : '-';
 
             row.innerHTML = `
-                <td>${p.syllable}</td>
                 <td>${p.line}</td>
-                <td>${p.syllableIndex}</td>
+                <td>${p.syllable}</td>
                 <td>${p.start || "--:--:--"}</td>
                 <td>${p.end || "--:--:--"}</td>
                 <td>${roleDisplay}</td>
