@@ -18,6 +18,8 @@
             "matches": ["*://www.youtube.com/*"],
             "js": [
                 "lib/subtitle-parser.js",
+                "lib/constants.js",
+                "lib/animation-utils.js",
                 "lib/storage.js",
                 "content/youtube-detector.js",
                 "content/lyrics-overlay.js",

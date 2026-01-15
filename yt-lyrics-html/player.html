@@ -133,8 +133,17 @@
 
     </div>
 
-    <script src="https://www.youtube.com/iframe_api"></script> <!-- YouTube API -->
-    <script src="lib/subtitle-parser.js"></script> <!-- 共用字幕解析模組 -->
-    <script src="player.js"></script> <!-- 連結 JS -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- lib 共用模組 -->
+    <script src="lib/subtitle-parser.js"></script>
+    <script src="lib/constants.js"></script>
+    <script src="lib/animation-utils.js"></script>
+    <!-- player 模組 -->
+    <script src="player/subtitle-loader.js"></script>
+    <script src="player/animation-engine.js"></script>
+    <script src="player/customization.js"></script>
+    <script src="player/fullscreen.js"></script>
+    <!-- 入口 -->
+    <script src="player.js"></script>
 </body>
 </html>

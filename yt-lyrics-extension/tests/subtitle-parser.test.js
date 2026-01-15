@@ -90,7 +90,8 @@ describe('SubtitleParser', () => {
                 startTime: 5.23,
                 endTime: 5.50,
                 word: '昨',
-                pinyin: null
+                pinyin: null,
+                role: null
             });
         });
 
@@ -104,7 +105,8 @@ describe('SubtitleParser', () => {
                 startTime: 27.11,
                 endTime: 27.58,
                 word: '미',
-                pinyin: 'mi'
+                pinyin: 'mi',
+                role: null
             });
         });
 
@@ -183,7 +185,8 @@ Line 2 | Word 2 | 00:03:50 → 00:04:20 | 界`;
                 startTime: 1.0,
                 endTime: 1.5,
                 word: '你',
-                pinyin: null
+                pinyin: null,
+                role: null
             });
         });
 

@@ -18,14 +18,14 @@ const LyricsOverlay = (function() {
     let getTimeFn = null;
     let activeTimeouts = new Set(); // 追蹤所有活動的 setTimeout
 
-    // 設定（角色顏色使用共用模組的預設值）
+    // 設定（使用共用模組的預設值）
     let settings = {
-        font: 'NotoSans',
-        fontSize: 40,
-        highlightColor: '#80D9E5',
-        shadowColor: '#1D1B1B',
+        font: Constants.DEFAULT_FONT,
+        fontSize: Constants.DEFAULT_FONT_SIZE,
+        highlightColor: Constants.DEFAULT_HIGHLIGHT_COLOR,
+        shadowColor: Constants.DEFAULT_SHADOW_COLOR,
         timeOffset: 0,
-        roleColors: { ...SubtitleParser.ROLE_COLORS }
+        roleColors: { ...Constants.ROLE_COLORS }
     };
 
     /**
@@ -131,15 +131,8 @@ const LyricsOverlay = (function() {
      * @param {number} currentTime - 當前時間
      */
     function animateWordHighlight(entry, textEl, currentTime) {
-        const totalDuration = entry.endTime - entry.startTime;
-        const elapsedTime = Math.max(0, currentTime - entry.startTime);
-        const progress = Math.min(1, elapsedTime / totalDuration);
-
-        // 使用 background-position 控制漸層
-        // 100% = 未開始 (顯示白色)
-        // 0% = 完成 (顯示高亮色)
-        const bgPosition = (1 - progress) * 100;
-        textEl.style.backgroundPosition = `${bgPosition}% 0`;
+        // 使用共用模組計算進度和背景位置
+        AnimationUtils.applyAnimationToElement(textEl, entry, currentTime);
     }
 
     // 快取目前顯示的行索引，用於判斷是否需要重建 DOM
@@ -163,9 +156,9 @@ const LyricsOverlay = (function() {
         // 獲取字幕的最大行數
         const maxLine = Math.max(...subtitleData.map(entry => entry.line));
 
-        // 檢查是否所有歌詞已播放完畢
+        // 檢查是否所有歌詞已播放完畢（使用共用模組的延遲常數）
         const lastEntry = subtitleData[subtitleData.length - 1];
-        if (lastEntry && adjustedTime > lastEntry.endTime + 1.5) {
+        if (lastEntry && adjustedTime > lastEntry.endTime + Constants.END_MESSAGE_DELAY) {
             // 歌詞已結束，顯示慶祝訊息
             if (!isShowingEndMessage) {
                 showEndMessage();
@@ -179,9 +172,9 @@ const LyricsOverlay = (function() {
             cachedLowerLineIndex = -1;
         }
 
-        // 判斷是否發生快進快退（時間跳躍超過 0.5 秒）
-        if (Math.abs(adjustedTime - lastUpdateTime) > 0.5) {
-            const nearestEntry = subtitleData.find(entry => entry.startTime >= adjustedTime);
+        // 判斷是否發生快進快退（使用共用模組）
+        if (AnimationUtils.detectFastSeek(adjustedTime, lastUpdateTime, Constants.FAST_SEEK_THRESHOLD)) {
+            const nearestEntry = AnimationUtils.findNearestEntry(subtitleData, adjustedTime);
             if (nearestEntry) {
                 if (nearestEntry.line % 2 === 1) {
                     currentOddLineIndex = nearestEntry.line;
@@ -246,15 +239,15 @@ const LyricsOverlay = (function() {
             });
         }
 
-        // 字幕換行條件
+        // 字幕換行條件（使用共用模組的閾值）
         if (upperLyrics.length > 0 &&
-            adjustedTime > upperLyrics[upperLyrics.length - 1].endTime + 0.6 &&
+            AnimationUtils.shouldAdvanceLine(adjustedTime, upperLyrics[upperLyrics.length - 1].endTime, Constants.LINE_ADVANCE_THRESHOLD) &&
             maxLine >= currentOddLineIndex + 2) {
             currentOddLineIndex += 2;
         }
 
         if (lowerLyrics.length > 0 &&
-            adjustedTime > lowerLyrics[lowerLyrics.length - 1].endTime + 0.6 &&
+            AnimationUtils.shouldAdvanceLine(adjustedTime, lowerLyrics[lowerLyrics.length - 1].endTime, Constants.LINE_ADVANCE_THRESHOLD) &&
             maxLine >= currentEvenLineIndex + 2) {
             currentEvenLineIndex += 2;
         }
@@ -294,7 +287,7 @@ const LyricsOverlay = (function() {
         if (entry.pinyin) {
             pinyinEl = document.createElement('span');
             pinyinEl.classList.add('yt-ktv-pronunciation');
-            pinyinEl.style.fontSize = (settings.fontSize * 0.4) + 'px';
+            pinyinEl.style.fontSize = (settings.fontSize * Constants.PINYIN_FONT_SCALE) + 'px';
             pinyinEl.style.lineHeight = '1.2';
             pinyinEl.style.whiteSpace = 'nowrap';
             // 漸層背景：左邊高亮色，右邊白色
@@ -354,13 +347,13 @@ const LyricsOverlay = (function() {
         displayArea.innerHTML = '';
         wordElements = [];
 
-        // 建立上方行
+        // 建立上方行（使用共用模組的結尾訊息）
         const upperLineDiv = document.createElement('div');
         upperLineDiv.classList.add('yt-ktv-line');
         upperLineDiv.style.fontSize = settings.fontSize + 'px';
         upperLineDiv.style.color = settings.highlightColor;
         upperLineDiv.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
-        upperLineDiv.textContent = '☆～來賓請掌聲鼓勵～☆';
+        upperLineDiv.textContent = Constants.END_MESSAGE_UPPER;
 
         // 建立下方行
         const lowerLineDiv = document.createElement('div');
@@ -368,7 +361,7 @@ const LyricsOverlay = (function() {
         lowerLineDiv.style.fontSize = settings.fontSize + 'px';
         lowerLineDiv.style.color = settings.highlightColor;
         lowerLineDiv.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
-        lowerLineDiv.textContent = '☆～把酒同歡 歡樂無限～☆';
+        lowerLineDiv.textContent = Constants.END_MESSAGE_LOWER;
 
         displayArea.appendChild(upperLineDiv);
         displayArea.appendChild(lowerLineDiv);

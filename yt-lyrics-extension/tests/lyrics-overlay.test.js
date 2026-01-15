@@ -18,6 +18,10 @@ describe('LyricsOverlay', () => {
 
         // 重新載入模組
         jest.resetModules();
+        // 載入所有共用模組（lyrics-overlay.js 的依賴）
+        global.SubtitleParser = require('../lib/subtitle-parser.js');
+        global.Constants = require('../lib/constants.js');
+        global.AnimationUtils = require('../lib/animation-utils.js');
         LyricsOverlay = require('../content/lyrics-overlay.js');
     });
 
