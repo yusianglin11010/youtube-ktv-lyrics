@@ -43,6 +43,7 @@ const UIHandlers = (function() {
      */
     function displayLyrics() {
         let displayArea = document.getElementById("lyricsDisplay");
+        displayArea.classList.remove('completed');
 
         if (MakerState.lyrics.length === 0 || MakerState.currentLineIndex >= MakerState.lyrics.length) {
             displayArea.innerHTML = "";
@@ -60,7 +61,43 @@ const UIHandlers = (function() {
                 return `<span id="word-${index}" class="word">${pinyinText}<span class="main-word">${word}</span></span>`;
             }).join("");
 
+        // 自動調整字體大小
+        adjustFontSize(displayArea);
+
         updateLyricsStatus();
+    }
+
+    /**
+     * 自動調整字體大小以適應容器
+     */
+    function adjustFontSize(container) {
+        if (!container) return;
+
+        const containerWidth = container.offsetWidth;
+        const containerHeight = container.offsetHeight;
+
+        if (containerWidth === 0 || containerHeight === 0) return;
+
+        // 從較大的字體開始
+        let fontSize = 28;
+        const minFontSize = 14;
+
+        // 暫時設置字體大小來測量
+        container.style.fontSize = `${fontSize}px`;
+
+        // 逐步縮小直到內容適合
+        while (fontSize > minFontSize) {
+            const contentWidth = container.scrollWidth;
+            const contentHeight = container.scrollHeight;
+
+            // 檢查是否溢出
+            if (contentWidth <= containerWidth && contentHeight <= containerHeight) {
+                break;
+            }
+
+            fontSize -= 1;
+            container.style.fontSize = `${fontSize}px`;
+        }
     }
 
     /**
@@ -69,18 +106,17 @@ const UIHandlers = (function() {
     function displayPinyinSyncInterface() {
         let container = document.getElementById("lyricsDisplay");
         container.innerHTML = "";
+        container.classList.remove('completed');
 
         if (MakerState.pinyinLyrics.length === 0 || MakerState.currentLineIndex >= MakerState.pinyinLyrics.length) {
             return;
         }
 
-        // 顯示主歌詞作為小字提示
-        let mainLyricPreview = document.createElement("div");
-        mainLyricPreview.className = "main-lyric-preview";
-        mainLyricPreview.textContent = `主歌詞：${MakerState.lyrics[MakerState.currentLineIndex].join("")}`;
-        container.appendChild(mainLyricPreview);
+        // 創建垂直佈局容器
+        let verticalContainer = document.createElement("div");
+        verticalContainer.className = "lyrics-vertical-container";
 
-        // 顯示拼音音節
+        // 顯示拼音音節 (上方)
         let pinyinLine = document.createElement("div");
         pinyinLine.className = "pinyin-line";
         MakerState.pinyinLyrics[MakerState.currentLineIndex].forEach((syllable, idx) => {
@@ -98,7 +134,18 @@ const UIHandlers = (function() {
 
             pinyinLine.appendChild(span);
         });
-        container.appendChild(pinyinLine);
+        verticalContainer.appendChild(pinyinLine);
+
+        // 顯示主歌詞 (下方)
+        let mainLyricPreview = document.createElement("div");
+        mainLyricPreview.className = "main-lyric-preview";
+        mainLyricPreview.textContent = MakerState.lyrics[MakerState.currentLineIndex].join("");
+        verticalContainer.appendChild(mainLyricPreview);
+
+        container.appendChild(verticalContainer);
+
+        // 自動調整字體大小
+        adjustFontSize(container);
 
         updateLyricsStatus();
     }
@@ -272,6 +319,14 @@ const UIHandlers = (function() {
             if (progressIndicator) {
                 progressIndicator.textContent = "逐字時間紀錄已完成!";
             }
+
+            // 更新歌詞顯示區域為完成訊息
+            let displayArea = document.getElementById("lyricsDisplay");
+            if (displayArea && !displayArea.classList.contains('completed')) {
+                displayArea.innerHTML = '<div class="completion-message">✨ 時間對齊已完成 ✨</div>';
+                displayArea.classList.add('completed');
+            }
+
             if (Date.now() - lastTimestampsUpdate < 1000) {
                 launchFireworks();
             }

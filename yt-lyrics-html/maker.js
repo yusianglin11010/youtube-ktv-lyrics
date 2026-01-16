@@ -68,6 +68,12 @@
         SyncRecorder.resetAll();
     };
 
+    window.confirmResetAll = function() {
+        if (confirm('⚠️ 你確定要全部重來嗎？\n\n這將會清除所有已記錄的時間戳記。')) {
+            SyncRecorder.resetAll();
+        }
+    };
+
     window.setRole = function(role) {
         UIHandlers.setRole(role);
     };

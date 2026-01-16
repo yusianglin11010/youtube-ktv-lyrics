@@ -853,7 +853,7 @@ body::before {
 #lyricsContainer {
     width: 100%;
     max-width: 100%;
-    height: 90px;
+    min-height: 90px;
     padding: 16px 24px;
     text-align: center;
     display: flex;
@@ -862,7 +862,6 @@ body::before {
     margin-bottom: 0;
     flex-shrink: 0;
     box-sizing: border-box;
-    overflow: hidden;
     background: var(--studio-panel);
     border-radius: var(--radius-lg);
     border: 1px solid var(--studio-border);
@@ -882,6 +881,8 @@ body::before {
     font-weight: 500;
     color: var(--text-primary);
     line-height: 1.4;
+    width: 100%;
+    max-width: 100%;
 }
 
 .word {
@@ -921,22 +922,36 @@ body::before {
    🎵 Pinyin Sync Interface
    ═══════════════════════════════════════════════════════════════════════════ */
 
+.lyrics-vertical-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    align-items: center;
+}
+
 .pinyin-line {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .pinyin-syllable {
-    font-size: 26px;
+    font-size: 1em;
     font-weight: 500;
     color: var(--text-muted);
     padding: 4px 8px;
     border-radius: var(--radius-sm);
     transition: all 0.2s ease;
     cursor: default;
+    white-space: nowrap;
+    flex-shrink: 1;
 }
 
 .pinyin-syllable.highlight {
@@ -951,6 +966,48 @@ body::before {
     opacity: 0.5;
 }
 
+.main-lyric-preview {
+    font-size: 0.65em;
+    color: var(--text-secondary);
+    font-weight: 400;
+    line-height: 1.3;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ✨ Completion Message
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.completion-message {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--vu-green);
+    text-shadow: 0 0 20px var(--vu-green-glow);
+    animation: completionPulse 2s ease-in-out infinite;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+@keyframes completionPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+}
+
+#lyricsDisplay.completed {
+    padding: 40px 20px;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    🔘 Load Lyrics Button - Master Control
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -958,10 +1015,12 @@ body::before {
 .lyrics-button-container {
     flex-shrink: 0;
     box-sizing: border-box;
+    display: flex;
+    gap: 12px;
 }
 
 .load-lyrics-btn {
-    width: 100%;
+    flex: 1;
     padding: 10px 16px;
     font-size: 12px;
     font-weight: 600;
@@ -989,6 +1048,37 @@ body::before {
 }
 
 .load-lyrics-btn:active {
+    transform: translateY(0);
+}
+
+.reset-all-btn {
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    background: linear-gradient(180deg, #ff4444 0%, #cc0000 100%);
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.reset-all-btn:hover {
+    background: linear-gradient(180deg, #ff6666 0%, #ff4444 100%);
+    box-shadow: 0 0 32px rgba(255, 68, 68, 0.5);
+    transform: translateY(-2px);
+}
+
+.reset-all-btn:active {
     transform: translateY(0);
 }
 
