@@ -899,7 +899,6 @@ body::before {
     font-weight: 600;
     transform: scale(1.08);
     text-shadow: 0 0 16px var(--vu-green-glow);
-    background: rgba(0, 212, 170, 0.1);
 }
 
 .word.highlight .pinyin-preview {

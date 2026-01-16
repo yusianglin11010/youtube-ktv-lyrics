@@ -95,7 +95,10 @@ const VideoController = (function() {
         timerInterval = setInterval(() => {
             if (player && typeof player.getCurrentTime === "function") {
                 timer = player.getCurrentTime();
-                document.getElementById("timer").textContent = timer.toFixed(2);
+                let timerEl = document.getElementById("timer");
+                if (timerEl) {
+                    timerEl.textContent = timer.toFixed(2);
+                }
             }
         }, 100);
     }

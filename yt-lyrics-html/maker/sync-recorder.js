@@ -7,56 +7,106 @@ const SyncRecorder = (function() {
     'use strict';
 
     /**
-     * 記錄拼音音節時間戳記
+     * 記錄時間戳記（通用函數，支援拼音和主歌詞）
      */
-    function nextPinyinSyllable() {
-        if (MakerState.currentWordIndex < MakerState.pinyinLyrics[MakerState.currentLineIndex].length) {
+    function recordTimestamp() {
+        let isPinyinMode = MakerState.workflowPhase === 'SYNC_PINYIN';
+        let currentLyrics = isPinyinMode ? MakerState.pinyinLyrics : MakerState.lyrics;
+
+        if (MakerState.currentWordIndex < currentLyrics[MakerState.currentLineIndex].length) {
             UIHandlers.addButtonEffect("nextCharBtn");
             let currentTime = VideoController.getCurrentTime();
             let startTime = LyricsProcessor.formatTime(currentTime);
             let endTime = LyricsProcessor.formatTime(currentTime + 1);
 
-            // 更新上一個音節的結束時間
-            if (MakerState.currentWordIndex > 0) {
-                let lastEntry = MakerState.pinyinTimestamps[MakerState.pinyinTimestamps.length - 1];
-                if (lastEntry) {
-                    lastEntry.end = startTime;
+            if (isPinyinMode) {
+                // 拼音模式
+                // 更新上一個音節的結束時間
+                if (MakerState.currentWordIndex > 0) {
+                    let lastEntry = MakerState.pinyinTimestamps[MakerState.pinyinTimestamps.length - 1];
+                    if (lastEntry) {
+                        lastEntry.end = startTime;
+                    }
                 }
+
+                // 記錄當前拼音音節
+                let newEntry = {
+                    line: MakerState.currentLineIndex + 1,
+                    syllableIndex: MakerState.currentWordIndex + 1,
+                    start: startTime,
+                    end: endTime,
+                    syllable: MakerState.pinyinLyrics[MakerState.currentLineIndex][MakerState.currentWordIndex],
+                    role: MakerState.currentRole,
+                    mappedToWord: null
+                };
+
+                MakerState.pinyinTimestamps.push(newEntry);
+
+                // 高亮當前音節
+                let syllableEl = document.getElementById(`pinyin-${MakerState.currentWordIndex}`);
+                if (syllableEl) {
+                    syllableEl.classList.add("highlight");
+                }
+
+                UIHandlers.updatePinyinTimestampsDisplay();
+
+                // 檢查是否完成所有行
+                if (allPinyinSynced()) {
+                    promptEnterMappingPhase();
+                }
+            } else {
+                // 主歌詞模式
+                // 更新上一個字的結束時間
+                if (MakerState.currentWordIndex > 0) {
+                    let lastEntry = MakerState.timestamps[MakerState.timestamps.length - 1];
+                    if (lastEntry && lastEntry.line === MakerState.currentLineIndex + 1) {
+                        lastEntry.end = startTime;
+                    }
+                }
+
+                // 記錄當前字
+                let newEntry = {
+                    line: MakerState.currentLineIndex + 1,
+                    wordIndex: MakerState.currentWordIndex + 1,
+                    start: startTime,
+                    end: endTime,
+                    word: MakerState.lyrics[MakerState.currentLineIndex][MakerState.currentWordIndex],
+                    role: MakerState.currentRole
+                };
+
+                MakerState.timestamps.push(newEntry);
+
+                // 高亮當前字
+                let wordEl = document.getElementById(`word-${MakerState.currentWordIndex}`);
+                if (wordEl) {
+                    wordEl.classList.add("highlight");
+                }
+
+                UIHandlers.updateTimestampsDisplay();
             }
 
-            // 記錄當前拼音音節
-            let newEntry = {
-                line: MakerState.currentLineIndex + 1,
-                syllableIndex: MakerState.currentWordIndex + 1,
-                start: startTime,
-                end: endTime,
-                syllable: MakerState.pinyinLyrics[MakerState.currentLineIndex][MakerState.currentWordIndex],
-                role: MakerState.currentRole,
-                mappedToWord: null
-            };
-
-            MakerState.pinyinTimestamps.push(newEntry);
-
-            // 高亮當前音節
-            let syllableEl = document.getElementById(`pinyin-${MakerState.currentWordIndex}`);
-            if (syllableEl) {
-                syllableEl.classList.add("highlight");
-            }
             MakerState.currentWordIndex++;
-            UIHandlers.updatePinyinTimestampsDisplay();
 
-            // 檢查是否完成所有行
-            if (allPinyinSynced()) {
-                promptEnterMappingPhase();
-            } else if (MakerState.currentWordIndex >= MakerState.pinyinLyrics[MakerState.currentLineIndex].length) {
+            // 檢查是否完成當前行
+            if (MakerState.currentWordIndex >= currentLyrics[MakerState.currentLineIndex].length) {
                 // 自動換行
                 setTimeout(() => {
                     nextLine();
                 }, 200);
             }
         }
+
         UIHandlers.updateProgressBar();
-        updatePinyinDownloadStatus();
+        if (isPinyinMode) {
+            updatePinyinDownloadStatus();
+        }
+    }
+
+    /**
+     * 記錄拼音音節時間戳記（委派給 recordTimestamp）
+     */
+    function nextPinyinSyllable() {
+        recordTimestamp();
     }
 
     /**
@@ -95,12 +145,10 @@ const SyncRecorder = (function() {
     }
 
     /**
-     * 舊的 nextChar 函數（委派給 nextPinyinSyllable）
+     * nextChar 函數（統一入口，委派給 recordTimestamp）
      */
     function nextChar() {
-        if (MakerState.workflowPhase === 'SYNC_PINYIN') {
-            nextPinyinSyllable();
-        }
+        recordTimestamp();
     }
 
     /**
@@ -218,6 +266,7 @@ const SyncRecorder = (function() {
     }
 
     return {
+        recordTimestamp,
         nextPinyinSyllable,
         nextChar,
         nextLine,

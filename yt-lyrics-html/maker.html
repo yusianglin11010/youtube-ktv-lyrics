@@ -1,29 +1,41 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>YouTube KTV 字幕產生器</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="maker.css">
 </head>
+
 <body>
     <div class="container">
         <div class="header-toolbar">
             <div class="header-left">
                 <span class="logo">♫ KTV字幕產生器</span>
-                <span class="credits">by ruoqiaowen <a href="https://github.com/ruoqiaowen/ruoqiaowen.github.io" target="_blank">[Github]</a></span>
+                <span class="credits">by ruoqiaowen <a
+                        href="https://github.com/ruoqiaowen/ruoqiaowen.github.io"
+                        target="_blank">[Github]</a></span>
             </div>
             <div class="header-center">
                 <!-- 控制按鈕 -->
-                <button class="ctrl-btn" onclick="prevLine()" title="上一句">⭡</button>
-                <button class="ctrl-btn" onclick="restartCurrentLine()" title="本句重來">⭠</button>
-                <button class="ctrl-btn primary" onclick="nextChar()" title="紀錄本字">⭢</button>
-                <button class="ctrl-btn" onclick="nextLine()" title="下一句">⭣</button>
-                <button class="ctrl-btn danger" onclick="resetAll()" title="全部重來">✕</button>
-                <button class="ctrl-btn help" onclick="toggleHelp()" title="操作說明">?</button>
+                <button class="ctrl-btn" onclick="prevLine()"
+                    title="上一句">⭡</button>
+                <button class="ctrl-btn" onclick="restartCurrentLine()"
+                    title="本句重來">⭠</button>
+                <button class="ctrl-btn primary" onclick="nextChar()"
+                    title="紀錄本字">⭢</button>
+                <button class="ctrl-btn" onclick="nextLine()"
+                    title="下一句">⭣</button>
+                <button class="ctrl-btn danger" onclick="resetAll()"
+                    title="全部重來">✕</button>
+                <button class="ctrl-btn help" onclick="toggleHelp()"
+                    title="操作說明">?</button>
             </div>
             <div class="header-right">
                 <!-- 角色選擇器 -->
@@ -55,9 +67,14 @@
             <!-- YouTube 影片與輸入 -->
             <div class="video-container">
                 <div class="video-url-row">
-                    <input type="text" id="videoUrl" placeholder="https://www.youtube.com/..." class="url-input">
-                    <button class="load-video-btn" onclick="loadVideo()" title="載入影片">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <input type="text" id="videoUrl"
+                        placeholder="https://www.youtube.com/..."
+                        value="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                        class="url-input">
+                    <button class="load-video-btn" onclick="loadVideo()"
+                        title="載入影片">
+                        <svg width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
                             <polygon points="5 3 19 12 5 21 5 3"></polygon>
                         </svg>
                     </button>
@@ -70,37 +87,48 @@
                 <div class="dual-textarea-container">
                     <div class="textarea-group">
                         <label for="lyricsInput">主要歌詞</label>
-                        <textarea id="lyricsInput" placeholder="輸入歌詞，每句一行"></textarea>
+                        <textarea id="lyricsInput" placeholder="輸入歌詞，每句一行">We're no strangers to love
+You know the rules and so do I</textarea>
                     </div>
                     <div class="textarea-group">
                         <label for="pinyinInput">拼音（選填）</label>
-                        <textarea id="pinyinInput" placeholder="輸入拼音，每句一行&#10;需與主歌詞結構對齊"></textarea>
+                        <textarea id="pinyinInput"
+                            placeholder="輸入拼音，每句一行&#10;需與主歌詞結構對齊"></textarea>
                     </div>
                 </div>
                 <div class="pinyin-controls">
                     <label class="pinyin-checkbox-label">
                         <input type="checkbox" id="enablePinyin"> 啟用拼音字幕
                     </label>
-                    <button type="button" class="validate-btn" onclick="validateAlignment()">驗證對齊</button>
-                    <button type="button" class="group-mapping-btn" onclick="openGroupMappingDialog()">群組 Mapping</button>
+                    <button type="button" class="validate-btn"
+                        onclick="validateAlignment()">驗證對齊</button>
+                    <button type="button" class="group-mapping-btn"
+                        onclick="openGroupMappingDialog()">群組 Mapping</button>
                 </div>
 
                 <!-- 逐字時間紀錄 - 折疊式 -->
                 <div class="timestamps-collapsible">
-                    <div class="timestamps-summary" onclick="toggleTimestampDetails()">
+                    <div class="timestamps-summary"
+                        onclick="toggleTimestampDetails()">
                         <span class="last-record" id="lastRecord"></span>
                         <div class="summary-actions">
-                            <button class="download-icon-btn" id="downloadBtn" onclick="event.stopPropagation(); exportTimestamps()" disabled title="下載時間紀錄">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                    <polyline points="7 10 12 15 17 10"/>
-                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                            <button class="download-icon-btn" id="downloadBtn"
+                                onclick="event.stopPropagation(); exportTimestamps()"
+                                disabled title="下載時間紀錄">
+                                <svg width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path
+                                        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
                                 </svg>
                             </button>
                             <span class="expand-icon" id="expandIcon">▼</span>
                         </div>
                     </div>
-                    <div class="timestamps-details collapsed" id="timestampDetails">
+                    <div class="timestamps-details collapsed"
+                        id="timestampDetails">
                         <div class="table-wrapper">
                             <table id="timestampsTable">
                                 <thead>
@@ -120,7 +148,8 @@
 
                 <div class="lyrics-button-container">
                     <button class="load-lyrics-btn" onclick="loadLyrics()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <circle cx="12" cy="12" r="3"></circle>
                         </svg>
@@ -146,13 +175,16 @@
     <dialog id="groupMappingDialog" class="group-mapping-dialog">
         <div class="dialog-header">
             <h2>拼音群組 Mapping</h2>
-            <button class="close-dialog-btn" onclick="closeGroupMappingDialog()">✕</button>
+            <button class="close-dialog-btn"
+                onclick="closeGroupMappingDialog()">✕</button>
         </div>
 
         <!-- Info Bar (Always visible) -->
         <div class="info-bar">
-            <strong>🎹 鍵盤：</strong>拼音（← → 移動，Space 選取）、主歌詞（W/A/D 移動，Enter 連結）、Backspace 刪除、Esc 清除
-            <strong style="margin-left: 16px;">🖱️ 滑鼠：</strong>點擊拼音選取（可多選），再點擊主歌詞建立連結
+            <strong>🎹 鍵盤：</strong>拼音（← → 移動，Space 選取）、主歌詞（W/A/D 移動，Enter
+            連結）、Backspace 刪除、Esc 清除
+            <strong style="margin-left: 16px;">🖱️
+                滑鼠：</strong>點擊拼音選取（可多選），再點擊主歌詞建立連結
         </div>
 
         <div class="dialog-content">
@@ -163,12 +195,16 @@
 
         <div class="dialog-footer">
             <div class="mapping-navigation">
-                <button onclick="prevGroupMappingLine()" id="prevLineBtn">← 上一行</button>
-                <button onclick="nextGroupMappingLine()" id="nextLineBtn">下一行 →</button>
+                <button onclick="prevGroupMappingLine()" id="prevLineBtn">←
+                    上一行</button>
+                <button onclick="nextGroupMappingLine()" id="nextLineBtn">下一行
+                    →</button>
             </div>
             <div class="mapping-actions">
-                <button onclick="saveGroupMappings()" class="save-btn">儲存並更新</button>
-                <button onclick="closeGroupMappingDialog()" class="cancel-btn">取消</button>
+                <button onclick="saveGroupMappings()"
+                    class="save-btn">儲存並更新</button>
+                <button onclick="closeGroupMappingDialog()"
+                    class="cancel-btn">取消</button>
             </div>
         </div>
     </dialog>
@@ -193,4 +229,5 @@
     <div id="fireworks-overlay"></div>
 
 </body>
+
 </html>

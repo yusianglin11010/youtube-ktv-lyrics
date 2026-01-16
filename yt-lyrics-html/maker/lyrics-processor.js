@@ -175,33 +175,44 @@ const LyricsProcessor = (function() {
             .map(line => parseLyricsLine(line))
             .filter(line => line.length > 0);
 
-        // 新模式：拼音優先
-        if (!MakerState.pinyinEnabled || !pinyinInput) {
-            alert("❌ 新模式需要啟用拼音並輸入拼音內容！\n請勾選「啟用拼音」並在拼音欄位輸入音節（空格分隔）。");
-            return;
+        // 檢查是否啟用拼音模式
+        if (MakerState.pinyinEnabled && pinyinInput) {
+            // 解析拼音
+            MakerState.pinyinLyrics = pinyinInput.split("\n")
+                .map(line => parseLyricsLine(line))
+                .filter(line => line.length > 0);
+
+            // 驗證行數對齊
+            if (MakerState.lyrics.length !== MakerState.pinyinLyrics.length) {
+                alert(`⚠️ 主歌詞有 ${MakerState.lyrics.length} 行，拼音有 ${MakerState.pinyinLyrics.length} 行，請檢查對齊！`);
+                return;
+            }
+
+            // 初始化拼音優先工作流程
+            MakerState.workflowPhase = 'SYNC_PINYIN';
+            MakerState.pinyinTimestamps = [];
+            MakerState.pinyinToLyricMappings = [];
+            MakerState.timestamps = [];
+            MakerState.currentWordIndex = 0;
+            MakerState.currentLineIndex = 0;
+            MakerState.totalWordsInSong = MakerState.pinyinLyrics.reduce((sum, line) => sum + line.length, 0);
+
+            UIHandlers.displayPinyinSyncInterface();
+        } else {
+            // 不使用拼音，直接同步主歌詞
+            MakerState.pinyinEnabled = false;
+            MakerState.pinyinLyrics = [];
+            MakerState.pinyinTimestamps = [];
+            MakerState.pinyinToLyricMappings = [];
+            MakerState.timestamps = [];
+            MakerState.currentWordIndex = 0;
+            MakerState.currentLineIndex = 0;
+            MakerState.workflowPhase = 'SYNC_LYRICS';
+            MakerState.totalWordsInSong = MakerState.lyrics.reduce((sum, line) => sum + line.length, 0);
+
+            UIHandlers.displayLyrics();
         }
 
-        // 解析拼音
-        MakerState.pinyinLyrics = pinyinInput.split("\n")
-            .map(line => parseLyricsLine(line))
-            .filter(line => line.length > 0);
-
-        // 驗證行數對齊
-        if (MakerState.lyrics.length !== MakerState.pinyinLyrics.length) {
-            alert(`⚠️ 主歌詞有 ${MakerState.lyrics.length} 行，拼音有 ${MakerState.pinyinLyrics.length} 行，請檢查對齊！`);
-            return;
-        }
-
-        // 初始化新工作流程狀態
-        MakerState.workflowPhase = 'SYNC_PINYIN';
-        MakerState.pinyinTimestamps = [];
-        MakerState.pinyinToLyricMappings = [];
-        MakerState.timestamps = [];
-        MakerState.currentWordIndex = 0;
-        MakerState.currentLineIndex = 0;
-        MakerState.totalWordsInSong = MakerState.pinyinLyrics.reduce((sum, line) => sum + line.length, 0);
-
-        UIHandlers.displayPinyinSyncInterface();
         UIHandlers.updateProgressBar();
     }
 
