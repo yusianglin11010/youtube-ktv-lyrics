@@ -181,6 +181,15 @@ const UIHandlers = (function() {
         if (tableWrapper) {
             tableWrapper.scrollTop = tableWrapper.scrollHeight;
         }
+
+        // 更新最後記錄顯示
+        let lastRecordEl = document.getElementById("lastRecord");
+        if (lastRecordEl && MakerState.pinyinTimestamps.length > 0) {
+            let last = MakerState.pinyinTimestamps[MakerState.pinyinTimestamps.length - 1];
+            lastRecordEl.textContent = `最後: ${last.syllable} ${last.start} → ${last.end}`;
+        } else if (lastRecordEl) {
+            lastRecordEl.textContent = "";
+        }
     }
 
     /**
