@@ -172,6 +172,8 @@ const SyncRecorder = (function() {
      * 上一行
      */
     function prevLine() {
+        let isPinyinMode = MakerState.workflowPhase === 'SYNC_PINYIN';
+
         if (MakerState.currentLineIndex > 0) {
             UIHandlers.addButtonEffect("prevLineBtn");
 
@@ -184,21 +186,48 @@ const SyncRecorder = (function() {
                 VideoController.seekTo(targetTime, true);
             }
 
-            // 刪除本行及上一行的所有時間戳記
-            MakerState.timestamps = MakerState.timestamps.filter(t =>
-                t.line !== MakerState.currentLineIndex + 1 && t.line !== MakerState.currentLineIndex
-            );
+            // 根據模式刪除本行及上一行的時間戳記
+            if (isPinyinMode) {
+                MakerState.pinyinTimestamps = MakerState.pinyinTimestamps.filter(t =>
+                    t.line !== MakerState.currentLineIndex + 1 &&
+                    t.line !== MakerState.currentLineIndex
+                );
+            } else {
+                MakerState.timestamps = MakerState.timestamps.filter(t =>
+                    t.line !== MakerState.currentLineIndex + 1 &&
+                    t.line !== MakerState.currentLineIndex
+                );
+            }
 
             MakerState.currentLineIndex--;
             MakerState.currentWordIndex = 0;
-            UIHandlers.displayLyrics();
-            UIHandlers.updateTimestampsDisplay();
+
+            // 根據模式更新顯示
+            if (isPinyinMode) {
+                UIHandlers.displayPinyinSyncInterface();
+                UIHandlers.updatePinyinTimestampsDisplay();
+            } else {
+                UIHandlers.displayLyrics();
+                UIHandlers.updateTimestampsDisplay();
+            }
         } else {
-            MakerState.timestamps = [];
+            // 如果在第一行,清空所有時間戳
+            if (isPinyinMode) {
+                MakerState.pinyinTimestamps = [];
+            } else {
+                MakerState.timestamps = [];
+            }
+
             MakerState.currentLineIndex = 0;
             MakerState.currentWordIndex = 0;
-            UIHandlers.displayLyrics();
-            UIHandlers.updateTimestampsDisplay();
+
+            if (isPinyinMode) {
+                UIHandlers.displayPinyinSyncInterface();
+                UIHandlers.updatePinyinTimestampsDisplay();
+            } else {
+                UIHandlers.displayLyrics();
+                UIHandlers.updateTimestampsDisplay();
+            }
         }
     }
 
@@ -208,20 +237,41 @@ const SyncRecorder = (function() {
     function restartCurrentLine() {
         UIHandlers.addButtonEffect("prevCharBtn");
 
+        let isPinyinMode = MakerState.workflowPhase === 'SYNC_PINYIN';
         let firstTimestamp = findFirstTimestampOfCurrentLine();
 
-        // 刪除當前行的所有時間戳記
-        MakerState.timestamps = MakerState.timestamps.filter(t => t.line !== MakerState.currentLineIndex + 1);
+        // 根據模式清空時間戳記
+        if (isPinyinMode) {
+            MakerState.pinyinTimestamps = MakerState.pinyinTimestamps.filter(t =>
+                t.line !== MakerState.currentLineIndex + 1
+            );
+        } else {
+            MakerState.timestamps = MakerState.timestamps.filter(t =>
+                t.line !== MakerState.currentLineIndex + 1
+            );
+        }
 
-        // 移除當前行所有字的 highlight 樣式
-        document.querySelectorAll(`#lyricsDisplay .word`).forEach(word => {
-            word.classList.remove("highlight");
-        });
+        // 移除當前行的高亮
+        if (isPinyinMode) {
+            document.querySelectorAll('.pinyin-syllable').forEach(el => {
+                el.classList.remove('highlight');
+            });
+        } else {
+            document.querySelectorAll('#lyricsDisplay .word').forEach(word => {
+                word.classList.remove('highlight');
+            });
+        }
 
         MakerState.currentWordIndex = 0;
 
-        UIHandlers.updateTimestampsDisplay();
-        UIHandlers.updateLyricsStatus();
+        // 根據模式更新顯示
+        if (isPinyinMode) {
+            UIHandlers.displayPinyinSyncInterface();
+            UIHandlers.updatePinyinTimestampsDisplay();
+        } else {
+            UIHandlers.updateTimestampsDisplay();
+            UIHandlers.updateLyricsStatus();
+        }
 
         // 設定 YouTube 播放器時間
         if (firstTimestamp !== null) {
@@ -234,20 +284,47 @@ const SyncRecorder = (function() {
      * 重置所有
      */
     function resetAll() {
+        // 重置索引
         MakerState.currentLineIndex = 0;
         MakerState.currentWordIndex = 0;
+
+        // 清空所有時間戳記
         MakerState.timestamps = [];
-        UIHandlers.displayLyrics();
-        UIHandlers.updateTimestampsDisplay();
+        MakerState.pinyinTimestamps = [];
+        MakerState.pinyinToLyricMappings = [];
+
+        // 重置工作流程狀態
+        if (MakerState.pinyinEnabled) {
+            MakerState.workflowPhase = 'SYNC_PINYIN';
+        } else {
+            MakerState.workflowPhase = 'INPUT';
+        }
+
+        // 移除所有高亮樣式
+        document.querySelectorAll('.word, .pinyin-syllable').forEach(el => {
+            el.classList.remove('highlight');
+        });
+
+        // 根據當前模式顯示
+        if (MakerState.workflowPhase === 'SYNC_PINYIN') {
+            UIHandlers.displayPinyinSyncInterface();
+            UIHandlers.updatePinyinTimestampsDisplay();
+        } else {
+            UIHandlers.displayLyrics();
+            UIHandlers.updateTimestampsDisplay();
+        }
     }
 
     /**
      * 找到當前行第一個字的時間戳記
      */
     function findFirstTimestampOfCurrentLine() {
-        for (let i = 0; i < MakerState.timestamps.length; i++) {
-            if (MakerState.timestamps[i].line === MakerState.currentLineIndex + 1) {
-                return LyricsProcessor.parseTimeToSeconds(MakerState.timestamps[i].start);
+        let isPinyinMode = MakerState.workflowPhase === 'SYNC_PINYIN';
+        let timestamps = isPinyinMode ? MakerState.pinyinTimestamps : MakerState.timestamps;
+
+        for (let i = 0; i < timestamps.length; i++) {
+            if (timestamps[i].line === MakerState.currentLineIndex + 1) {
+                return LyricsProcessor.parseTimeToSeconds(timestamps[i].start);
             }
         }
         return null;
@@ -257,9 +334,12 @@ const SyncRecorder = (function() {
      * 找到指定行的第一個字的時間戳記
      */
     function findFirstTimestampOfLine(lineIndex) {
-        for (let i = 0; i < MakerState.timestamps.length; i++) {
-            if (MakerState.timestamps[i].line === lineIndex + 1) {
-                return LyricsProcessor.parseTimeToSeconds(MakerState.timestamps[i].start);
+        let isPinyinMode = MakerState.workflowPhase === 'SYNC_PINYIN';
+        let timestamps = isPinyinMode ? MakerState.pinyinTimestamps : MakerState.timestamps;
+
+        for (let i = 0; i < timestamps.length; i++) {
+            if (timestamps[i].line === lineIndex + 1) {
+                return LyricsProcessor.parseTimeToSeconds(timestamps[i].start);
             }
         }
         return null;
