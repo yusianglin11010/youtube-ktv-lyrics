@@ -79,20 +79,27 @@ const AnimationEngine = (function() {
         let upperLyrics = PlayerState.subtitleData.filter(entry => entry.line === PlayerState.currentOddLineIndex);
         let lowerLyrics = PlayerState.subtitleData.filter(entry => entry.line === PlayerState.currentEvenLineIndex);
 
+        // 計算安全字體大小
+        const currentFontSize = FontSizeCalculator.getSafeFontSize(
+            PlayerState.currentFontSizePercentage,
+            PlayerState.containerWidth,
+            PlayerState.subtitleData
+        );
+
         let upperLineDiv = document.createElement("div");
         upperLineDiv.classList.add("lyrics-line");
-        upperLineDiv.style.fontSize = PlayerState.currentFontSize + "px";
+        upperLineDiv.style.fontSize = currentFontSize + "px";
 
         let lowerLineDiv = document.createElement("div");
         lowerLineDiv.classList.add("lyrics-line");
-        lowerLineDiv.style.fontSize = PlayerState.currentFontSize + "px";
+        lowerLineDiv.style.fontSize = currentFontSize + "px";
 
         upperLyrics.forEach(entry => {
-            upperLineDiv.appendChild(createWordSpan(entry, currentTime));
+            upperLineDiv.appendChild(createWordSpan(entry, currentTime, currentFontSize));
         });
 
         lowerLyrics.forEach(entry => {
-            lowerLineDiv.appendChild(createWordSpan(entry, currentTime));
+            lowerLineDiv.appendChild(createWordSpan(entry, currentTime, currentFontSize));
         });
 
         displayArea.appendChild(upperLineDiv);
@@ -119,11 +126,14 @@ const AnimationEngine = (function() {
     /**
      * 建立字詞 span 元素
      * 統一使用 backgroundPosition 動畫（與 Extension 一致）
+     * @param {object} entry - 字幕條目
+     * @param {number} currentTime - 當前時間
+     * @param {number} fontSize - 計算後的字體大小
      */
-    function createWordSpan(entry, currentTime) {
+    function createWordSpan(entry, currentTime, fontSize) {
         let wordSpan = document.createElement("span");
         wordSpan.classList.add("word");
-        wordSpan.style.fontSize = PlayerState.currentFontSize + "px";
+        wordSpan.style.fontSize = fontSize + "px";
 
         let wordContainer = document.createElement("div");
         wordContainer.classList.add("word-container");
@@ -136,7 +146,7 @@ const AnimationEngine = (function() {
         if (entry.pinyin) {
             let pinyinSpan = document.createElement("span");
             pinyinSpan.classList.add("pinyin-text");
-            pinyinSpan.style.fontSize = (PlayerState.currentFontSize * Constants.PINYIN_FONT_SCALE) + "px";
+            pinyinSpan.style.fontSize = (fontSize * Constants.PINYIN_FONT_SCALE) + "px";
 
             // 使用 backgroundPosition 動畫
             AnimationUtils.initGradientAnimation(pinyinSpan, highlightColor, 'white');
@@ -153,7 +163,7 @@ const AnimationEngine = (function() {
         let mainText = document.createElement("span");
         mainText.classList.add("main-text");
         mainText.innerHTML = entry.word.replace(/␣␣/g, "&nbsp;&nbsp;").replace(/␣/g, "&nbsp;");
-        mainText.style.fontSize = PlayerState.currentFontSize + "px";
+        mainText.style.fontSize = fontSize + "px";
 
         // 使用 backgroundPosition 動畫
         AnimationUtils.initGradientAnimation(mainText, highlightColor, 'white');

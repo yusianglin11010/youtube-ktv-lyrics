@@ -9,7 +9,8 @@ const Storage = (function() {
     // 預設設定值
     const DEFAULT_SETTINGS = {
         font: 'NotoSans',
-        fontSize: 40,
+        fontSize: 40,  // 保留用於向後相容
+        fontSizePercentage: 100,  // 新的百分比設定
         highlightColor: '#80D9E5',
         shadowColor: '#1D1B1B',
         timeOffset: 0,
@@ -27,7 +28,22 @@ const Storage = (function() {
     async function getSettings() {
         try {
             const result = await chrome.storage.sync.get('settings');
-            return result.settings || { ...DEFAULT_SETTINGS };
+            let settings = result.settings || { ...DEFAULT_SETTINGS };
+
+            // 資料遷移邏輯: 將舊的 px 設定轉換為百分比
+            if (settings.fontSizePercentage === undefined && settings.fontSize !== undefined) {
+                // 舊資料: 40px = 100%, 比例換算
+                settings.fontSizePercentage = Math.round((settings.fontSize / 40) * 100);
+                // 限制在合理範圍 70-150%
+                settings.fontSizePercentage = Math.max(70, Math.min(150, settings.fontSizePercentage));
+                settings._migrated = true;
+
+                // 立即儲存遷移後的設定
+                await saveSettings(settings);
+                console.log(`Font size migrated: ${settings.fontSize}px → ${settings.fontSizePercentage}%`);
+            }
+
+            return settings;
         } catch (error) {
             console.error('Failed to get settings:', error);
             return { ...DEFAULT_SETTINGS };

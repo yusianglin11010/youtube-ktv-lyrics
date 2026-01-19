@@ -17,11 +17,12 @@ const LyricsOverlay = (function() {
     let isEnabled = true;
     let getTimeFn = null;
     let activeTimeouts = new Set(); // 追蹤所有活動的 setTimeout
+    let containerWidth = 800; // 容器寬度,預設值
 
     // 設定（使用共用模組的預設值）
     let settings = {
         font: Constants.DEFAULT_FONT,
-        fontSize: Constants.DEFAULT_FONT_SIZE,
+        fontSizePercentage: Constants.DEFAULT_FONT_SIZE_PERCENTAGE,
         highlightColor: Constants.DEFAULT_HIGHLIGHT_COLOR,
         shadowColor: Constants.DEFAULT_SHADOW_COLOR,
         timeOffset: 0,
@@ -47,6 +48,8 @@ const LyricsOverlay = (function() {
 
         if (parentElement) {
             parentElement.appendChild(container);
+            // 偵測容器寬度
+            containerWidth = FontSizeCalculator.getContainerWidth(parentElement);
         }
 
         return container;
@@ -111,7 +114,14 @@ const LyricsOverlay = (function() {
     function applyStyles() {
         if (displayArea) {
             displayArea.style.fontFamily = settings.font;
-            displayArea.style.fontSize = settings.fontSize + 'px';
+
+            // 使用 FontSizeCalculator 計算安全的字體大小
+            const safeFontSize = FontSizeCalculator.getSafeFontSize(
+                settings.fontSizePercentage || Constants.DEFAULT_FONT_SIZE_PERCENTAGE,
+                containerWidth,
+                subtitleData
+            );
+            displayArea.style.fontSize = safeFontSize + 'px';
         }
     }
 
@@ -203,12 +213,12 @@ const LyricsOverlay = (function() {
             // 建立上方行 div
             const upperLineDiv = document.createElement('div');
             upperLineDiv.classList.add('yt-ktv-line');
-            upperLineDiv.style.fontSize = settings.fontSize + 'px';
+            // fontSize 由 displayArea 繼承,不需要內聯設定
 
             // 建立下方行 div
             const lowerLineDiv = document.createElement('div');
             lowerLineDiv.classList.add('yt-ktv-line');
-            lowerLineDiv.style.fontSize = settings.fontSize + 'px';
+            // fontSize 由 displayArea 繼承,不需要內聯設定
 
             // 填充上方行
             upperLyrics.forEach(entry => {
@@ -283,11 +293,18 @@ const LyricsOverlay = (function() {
 
         let pinyinEl = null;
 
+        // 計算當前安全字體大小
+        const currentFontSize = FontSizeCalculator.getSafeFontSize(
+            settings.fontSizePercentage || Constants.DEFAULT_FONT_SIZE_PERCENTAGE,
+            containerWidth,
+            subtitleData
+        );
+
         // 拼音（使用單層漸層）
         if (entry.pinyin) {
             pinyinEl = document.createElement('span');
             pinyinEl.classList.add('yt-ktv-pronunciation');
-            pinyinEl.style.fontSize = (settings.fontSize * Constants.PINYIN_FONT_SCALE) + 'px';
+            pinyinEl.style.fontSize = (currentFontSize * Constants.PINYIN_FONT_SCALE) + 'px';
             pinyinEl.style.lineHeight = '1.2';
             pinyinEl.style.whiteSpace = 'nowrap';
             // 漸層背景：左邊高亮色，右邊白色
@@ -306,7 +323,7 @@ const LyricsOverlay = (function() {
         // 主字（使用單層漸層）
         const textEl = document.createElement('span');
         textEl.classList.add('yt-ktv-main-text');
-        textEl.style.fontSize = settings.fontSize + 'px';
+        textEl.style.fontSize = currentFontSize + 'px';
         textEl.style.lineHeight = '1';
         // 漸層背景：左邊高亮色，右邊白色
         textEl.style.background = `linear-gradient(90deg, ${highlightColor} 0%, ${highlightColor} 50%, white 50%, white 100%)`;
@@ -347,10 +364,17 @@ const LyricsOverlay = (function() {
         displayArea.innerHTML = '';
         wordElements = [];
 
+        // 計算當前安全字體大小
+        const currentFontSize = FontSizeCalculator.getSafeFontSize(
+            settings.fontSizePercentage || Constants.DEFAULT_FONT_SIZE_PERCENTAGE,
+            containerWidth,
+            subtitleData
+        );
+
         // 建立上方行（使用共用模組的結尾訊息）
         const upperLineDiv = document.createElement('div');
         upperLineDiv.classList.add('yt-ktv-line');
-        upperLineDiv.style.fontSize = settings.fontSize + 'px';
+        upperLineDiv.style.fontSize = currentFontSize + 'px';
         upperLineDiv.style.color = settings.highlightColor;
         upperLineDiv.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
         upperLineDiv.textContent = Constants.END_MESSAGE_UPPER;
@@ -358,7 +382,7 @@ const LyricsOverlay = (function() {
         // 建立下方行
         const lowerLineDiv = document.createElement('div');
         lowerLineDiv.classList.add('yt-ktv-line');
-        lowerLineDiv.style.fontSize = settings.fontSize + 'px';
+        lowerLineDiv.style.fontSize = currentFontSize + 'px';
         lowerLineDiv.style.color = settings.highlightColor;
         lowerLineDiv.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
         lowerLineDiv.textContent = Constants.END_MESSAGE_LOWER;
@@ -431,14 +455,21 @@ const LyricsOverlay = (function() {
         if (isFullscreen && newParent) {
             newParent.appendChild(container);
             container.classList.add('yt-ktv-fullscreen');
+            // 重新計算容器寬度
+            containerWidth = FontSizeCalculator.getContainerWidth(newParent);
         } else {
             container.classList.remove('yt-ktv-fullscreen');
             // 移回 movie_player
             const moviePlayer = document.querySelector('#movie_player');
             if (moviePlayer && container.parentElement !== moviePlayer) {
                 moviePlayer.appendChild(container);
+                // 重新計算容器寬度
+                containerWidth = FontSizeCalculator.getContainerWidth(moviePlayer);
             }
         }
+
+        // 重新套用樣式以更新字體大小
+        applyStyles();
     }
 
     /**
@@ -479,6 +510,20 @@ const LyricsOverlay = (function() {
         cachedLowerLineIndex = -1;
         getTimeFn = null;
     }
+
+    // 監聽視窗大小變化,重新計算容器寬度
+    let resizeTimeout = null;
+    window.addEventListener('resize', () => {
+        if (resizeTimeout) {
+            clearTimeout(resizeTimeout);
+        }
+        resizeTimeout = setTimeout(() => {
+            if (container && container.parentElement) {
+                containerWidth = FontSizeCalculator.getContainerWidth(container.parentElement);
+                applyStyles();
+            }
+        }, 300); // Debounce 300ms
+    });
 
     // 導出 API
     return {

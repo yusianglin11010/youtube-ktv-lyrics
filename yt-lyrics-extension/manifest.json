@@ -19,6 +19,7 @@
             "js": [
                 "lib/subtitle-parser.js",
                 "lib/constants.js",
+                "lib/font-size-calculator.js",
                 "lib/animation-utils.js",
                 "lib/storage.js",
                 "content/youtube-detector.js",

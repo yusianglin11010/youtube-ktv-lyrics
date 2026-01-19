@@ -60,8 +60,15 @@
             const settings = result.settings || getDefaultSettings();
 
             elements.fontSelector.value = settings.font || 'NotoSans';
-            elements.fontSizeSlider.value = settings.fontSize || 40;
-            elements.fontSizeValue.textContent = `${settings.fontSize || 40}px`;
+
+            // 優先使用百分比,fallback 到舊的 px 設定
+            const fontSizePercentage = settings.fontSizePercentage !== undefined
+                ? settings.fontSizePercentage
+                : Math.round((settings.fontSize || 40) / 40 * 100);
+
+            elements.fontSizeSlider.value = fontSizePercentage;
+            elements.fontSizeValue.textContent = `${fontSizePercentage}%`;
+
             elements.highlightColor.value = settings.highlightColor || '#80D9E5';
             elements.shadowColor.value = settings.shadowColor || '#1D1B1B';
 
@@ -86,7 +93,7 @@
     function getDefaultSettings() {
         return {
             font: 'NotoSans',
-            fontSize: 40,
+            fontSizePercentage: 100,  // 改用百分比
             highlightColor: '#80D9E5',
             shadowColor: '#1D1B1B',
             timeOffset: 0,
@@ -370,7 +377,7 @@
     async function handleSettingChange() {
         const settings = {
             font: elements.fontSelector.value,
-            fontSize: parseInt(elements.fontSizeSlider.value, 10),
+            fontSizePercentage: parseInt(elements.fontSizeSlider.value, 10),  // 改用百分比
             highlightColor: elements.highlightColor.value,
             shadowColor: elements.shadowColor.value,
             timeOffset: parseInt(elements.timeOffset.value, 10) / 100,
@@ -398,7 +405,7 @@
      * 處理字體大小變更
      */
     function handleFontSizeChange() {
-        elements.fontSizeValue.textContent = `${elements.fontSizeSlider.value}px`;
+        elements.fontSizeValue.textContent = `${elements.fontSizeSlider.value}%`;
         handleSettingChange();
     }
 

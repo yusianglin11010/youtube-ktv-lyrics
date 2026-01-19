@@ -13,9 +13,10 @@
         hasPinyin: false,
         currentOddLineIndex: 1,
         currentEvenLineIndex: 2,
-        currentFontSize: 30,
+        currentFontSizePercentage: 100,  // 改用百分比
         currentOffset: 0,
-        roleColors: { ...SubtitleParser.ROLE_COLORS }
+        roleColors: { ...SubtitleParser.ROLE_COLORS },
+        containerWidth: 800  // 容器寬度,預設值
     };
 
     // YouTube API 準備好後的回調

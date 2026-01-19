@@ -17,7 +17,12 @@ const Constants = (function() {
     const DEFAULT_HIGHLIGHT_COLOR = '#80D9E5';
     const DEFAULT_SHADOW_COLOR = '#1D1B1B';
     const DEFAULT_FONT = 'NotoSans';
-    const DEFAULT_FONT_SIZE = 40;
+    const DEFAULT_FONT_SIZE = 40;  // 保留用於向後相容和遷移計算
+
+    // 百分比字體大小設定
+    const DEFAULT_FONT_SIZE_PERCENTAGE = 100;
+    const MIN_FONT_SIZE_PERCENTAGE = 70;
+    const MAX_FONT_SIZE_PERCENTAGE = 150;
 
     // 動畫參數
     const LINE_ADVANCE_THRESHOLD = 0.6;  // 換行延遲（秒）
@@ -33,7 +38,8 @@ const Constants = (function() {
     // 預設設定（完整）
     const DEFAULT_SETTINGS = {
         font: DEFAULT_FONT,
-        fontSize: DEFAULT_FONT_SIZE,
+        fontSize: DEFAULT_FONT_SIZE,  // 保留用於向後相容
+        fontSizePercentage: DEFAULT_FONT_SIZE_PERCENTAGE,  // 新的百分比設定
         highlightColor: DEFAULT_HIGHLIGHT_COLOR,
         shadowColor: DEFAULT_SHADOW_COLOR,
         timeOffset: 0,
@@ -49,6 +55,11 @@ const Constants = (function() {
         DEFAULT_SHADOW_COLOR,
         DEFAULT_FONT,
         DEFAULT_FONT_SIZE,
+
+        // 百分比字體大小
+        DEFAULT_FONT_SIZE_PERCENTAGE,
+        MIN_FONT_SIZE_PERCENTAGE,
+        MAX_FONT_SIZE_PERCENTAGE,
 
         // 動畫參數
         LINE_ADVANCE_THRESHOLD,

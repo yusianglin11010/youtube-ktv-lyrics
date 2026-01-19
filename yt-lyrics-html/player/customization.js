@@ -95,10 +95,21 @@ const Customization = (function() {
      * 更新字體大小
      */
     function updateFontSize() {
-        let fontSize = document.getElementById("fontSizeSlider").value;
-        PlayerState.currentFontSize = fontSize;
-        document.getElementById("fontSizeValue").textContent = fontSize + "px";
-        document.getElementById("lyricsDisplay").style.fontSize = fontSize + "px";
+        let fontSizePercentage = document.getElementById("fontSizeSlider").value;
+        PlayerState.currentFontSizePercentage = fontSizePercentage;
+        document.getElementById("fontSizeValue").textContent = fontSizePercentage + "%";
+
+        // 計算實際字體大小
+        const container = document.getElementById('lyricsContainer') || document.getElementById('player-container');
+        PlayerState.containerWidth = FontSizeCalculator.getContainerWidth(container);
+
+        const actualFontSize = FontSizeCalculator.getSafeFontSize(
+            fontSizePercentage,
+            PlayerState.containerWidth,
+            PlayerState.subtitleData
+        );
+
+        document.getElementById("lyricsDisplay").style.fontSize = actualFontSize + "px";
     }
 
     /**
