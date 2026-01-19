@@ -2,6 +2,63 @@
 
 - test page(not unit test or integration test) should put in /tmp folder
 
+## 共用程式庫同步規範
+
+### 檔案架構
+
+本專案包含兩個應用:
+- **yt-lyrics-html/** - 獨立網頁版 (製作器 + 播放器)
+- **yt-lyrics-extension/** - Chrome 擴充功能
+
+兩者共用以下 lib 檔案:
+- `lib/subtitle-parser.js` - 字幕解析器
+- `lib/constants.js` - 常數定義
+- `lib/animation-utils.js` - 動畫工具
+- `lib/font-size-calculator.js` - 字體大小計算
+
+### ⚠️ 重要:單一來源原則 (Single Source of Truth)
+
+**只能修改 `yt-lyrics-html/lib/` 中的檔案**
+
+`yt-lyrics-extension/lib/` 中的共用檔案是自動同步產生的,開頭會有以下警告註解:
+```javascript
+// ⚠️ AUTO-SYNCED from yt-lyrics-html/lib - DO NOT EDIT DIRECTLY
+// To modify this file, edit yt-lyrics-html/lib/[filename] and run: npm run sync-libs
+```
+
+### 修改流程
+
+1. **修改共用檔案時**:
+   ```bash
+   # 1. 只修改 yt-lyrics-html/lib/ 中的檔案
+   vim yt-lyrics-html/lib/subtitle-parser.js
+
+   # 2. 執行同步腳本
+   npm run sync-libs
+
+   # 3. 確認 extension 版本已更新
+   git diff yt-lyrics-extension/lib/
+   ```
+
+2. **自動同步時機**:
+   - 手動執行: `npm run sync-libs`
+   - Build 時: `npm run build` (會自動執行 sync-libs)
+   - Git hooks: `npm install` 後會透過 prepare hook 自動同步
+
+3. **檢查同步狀態**:
+   ```bash
+   # sync-libs.js 會自動偵測檔案差異
+   # 只有實際內容不同時才會覆寫
+   node sync-libs.js
+   ```
+
+### 注意事項
+
+- ❌ **絕對不要**直接編輯 `yt-lyrics-extension/lib/` 中的共用檔案
+- ✅ **一律修改** `yt-lyrics-html/lib/` 然後執行 `npm run sync-libs`
+- ✅ 提交 commit 前確認兩邊檔案已同步
+- ✅ 如果 extension 中有自動同步註解,代表設定正確
+
 ## 狀態管理規範
 
 ### 雙模式設計原則

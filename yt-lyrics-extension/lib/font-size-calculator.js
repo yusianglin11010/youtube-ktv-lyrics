@@ -1,5 +1,8 @@
+// ⚠️ AUTO-SYNCED from yt-lyrics-html/lib - DO NOT EDIT DIRECTLY
+// To modify this file, edit yt-lyrics-html/lib/font-size-calculator.js and run: npm run sync-libs
+
 /**
- * YouTube KTV Lyrics Extension - Font Size Calculator Module
+ * YouTube KTV Lyrics - Font Size Calculator Module
  * 字體大小計算模組 - 根據容器寬度動態計算字體大小,防止 overflow
  */
 

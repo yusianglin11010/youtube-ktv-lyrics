@@ -1,3 +1,6 @@
+// ⚠️ AUTO-SYNCED from yt-lyrics-html/lib - DO NOT EDIT DIRECTLY
+// To modify this file, edit yt-lyrics-html/lib/constants.js and run: npm run sync-libs
+
 /**
  * YouTube KTV Lyrics - Constants Module
  * 共用常數模組

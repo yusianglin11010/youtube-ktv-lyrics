@@ -1,0 +1,27 @@
+{
+  "name": "youtube-ktv-lyrics",
+  "version": "1.0.0",
+  "description": "YouTube KTV 歌詞製作器與播放器",
+  "scripts": {
+    "sync-libs": "node sync-libs.js",
+    "build": "npm run sync-libs",
+    "prepare": "npm run sync-libs",
+    "test": "echo \"Error: no test command specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruoqiaowen/youtube-ktv-lyrics"
+  },
+  "keywords": [
+    "youtube",
+    "ktv",
+    "lyrics",
+    "karaoke",
+    "subtitle"
+  ],
+  "author": "ruoqiaowen",
+  "license": "ISC",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

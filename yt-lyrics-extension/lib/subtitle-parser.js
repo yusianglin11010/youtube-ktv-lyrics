@@ -1,3 +1,6 @@
+// ⚠️ AUTO-SYNCED from yt-lyrics-html/lib - DO NOT EDIT DIRECTLY
+// To modify this file, edit yt-lyrics-html/lib/subtitle-parser.js and run: npm run sync-libs
+
 /**
  * YouTube KTV Lyrics Extension - Subtitle Parser Module
  * 字幕檔案解析模組

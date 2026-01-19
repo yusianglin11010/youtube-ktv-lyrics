@@ -1,3 +1,6 @@
+// ⚠️ AUTO-SYNCED from yt-lyrics-html/lib - DO NOT EDIT DIRECTLY
+// To modify this file, edit yt-lyrics-html/lib/animation-utils.js and run: npm run sync-libs
+
 /**
  * YouTube KTV Lyrics - Animation Utilities Module
  * 動畫工具模組
